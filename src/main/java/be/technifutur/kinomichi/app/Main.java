@@ -1,4 +1,4 @@
-package be.technifutur.kinomichi;
+package be.technifutur.kinomichi.app;
 
 public class Main {
     static void main() {
