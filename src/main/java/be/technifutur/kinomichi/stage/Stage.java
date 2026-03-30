@@ -17,10 +17,8 @@ public class Stage {
     private final int discountPercentage;
     private StageStatus status;
 
-    public Stage(List<Activity> activities, String name, List<Session> sessions, String shortDescription, int discountPercentage) {
-        this.activities = activities;
+    public Stage(String name, String shortDescription, int discountPercentage) {
         this.name = Objects.requireNonNull(name);
-        this.sessions = sessions;
         this.shortDescription = Objects.requireNonNull(shortDescription);
         this.discountPercentage = discountPercentage;
         this.status = StageStatus.DRAFT;
@@ -124,5 +122,27 @@ public class Stage {
 
     public int getDiscountPercentage() {
         return discountPercentage;
+    }
+
+    @Override
+    public String toString() {
+        return name + " [" + status.toString().toUpperCase() + "]\n"
+                + shortDescription + "\n"
+                + " - Réduction éventuelle : " + discountPercentage + "%\n"
+                + " - Plages :\n" + sessions
+                + " - Activités :\n" + activities;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Stage stage = (Stage) o;
+        return name.equals(stage.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return name.hashCode();
     }
 }

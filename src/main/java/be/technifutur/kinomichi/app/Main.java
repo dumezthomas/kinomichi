@@ -1,7 +1,13 @@
 package be.technifutur.kinomichi.app;
 
+import be.technifutur.kinomichi.menu.MenuPrincipal;
+
+import java.util.Scanner;
+
 public class Main {
     static void main() {
-        System.out.println("Système de gestion des stages de Kinomichi :");
+        Scanner scanner = new Scanner(System.in);
+        MenuPrincipal menu = new MenuPrincipal(scanner);
+        menu.show();
     }
 }
