@@ -1,8 +1,6 @@
 package be.technifutur.kinomichi.registration;
 
-import be.technifutur.kinomichi.exception.AlreadySubscribedException;
-import be.technifutur.kinomichi.exception.AlreadyTeachingException;
-import be.technifutur.kinomichi.exception.DoesNotBelongToStageException;
+import be.technifutur.kinomichi.exception.KinomichiException;
 import be.technifutur.kinomichi.exception.StageStatusException;
 import be.technifutur.kinomichi.person.Person;
 import be.technifutur.kinomichi.stage.Activity;
@@ -22,7 +20,7 @@ public class Registration {
 
     public Registration(List<Activity> activities, Person person, List<Session> sessions, Stage stage) {
         this.stage = Objects.requireNonNull(stage);
-        if (!stage.isStageOpen()) {
+        if (!stage.isOpen()) {
             throw new StageStatusException("Le stage n'est pas ouvert.");
         }
 
@@ -42,12 +40,12 @@ public class Registration {
     public void addActivity(Activity activity) {
         Objects.requireNonNull(activity);
 
-        if (!stage.isStageOpen()) {
+        if (!stage.isOpen()) {
             throw new StageStatusException("Le stage n'est pas ouvert.");
         }
 
         if (stage.streamActivities().noneMatch(a -> a.equals(activity))) {
-            throw new DoesNotBelongToStageException("L'activité n'appartient pas au stage.");
+            throw new KinomichiException("L'activité n'appartient pas au stage.");
         }
 
         if (this.activities == null) {
@@ -55,14 +53,14 @@ public class Registration {
         }
 
         if (activities.contains(activity)) {
-            throw new AlreadySubscribedException("Activité déjà ajoutée.");
+            throw new KinomichiException("Activité déjà ajoutée.");
         }
 
         activities.add(activity);
     }
 
     public void removeActivity(Activity activity) {
-        if (!stage.isStageOpen()) {
+        if (!stage.isOpen()) {
             throw new StageStatusException("Le stage n'est pas ouvert.");
         }
 
@@ -78,16 +76,16 @@ public class Registration {
     public void addSession(Session session) {
         Objects.requireNonNull(session);
 
-        if (!stage.isStageOpen()) {
+        if (!stage.isOpen()) {
             throw new StageStatusException("Le stage n'est pas ouvert.");
         }
 
         if (stage.streamSessions().noneMatch(s -> s.equals(session))) {
-            throw new DoesNotBelongToStageException("La plage n'appartient pas au stage.");
+            throw new KinomichiException("La plage n'appartient pas au stage.");
         }
 
         if (session.getInstructor() != null && session.getInstructor().equals(person)) {
-            throw new AlreadyTeachingException("Participant enregistré comme formateur pour cette session.");
+            throw new KinomichiException("Participant enregistré comme formateur pour cette session.");
         }
 
         if (this.sessions == null) {
@@ -95,14 +93,14 @@ public class Registration {
         }
 
         if (sessions.contains(session)) {
-            throw new AlreadySubscribedException("Plage déjà ajoutée.");
+            throw new KinomichiException("Plage déjà ajoutée.");
         }
 
         sessions.add(session);
     }
 
     public void removeSession(Session session) {
-        if (!stage.isStageOpen()) {
+        if (!stage.isOpen()) {
             throw new StageStatusException("Le stage n'est pas ouvert.");
         }
 

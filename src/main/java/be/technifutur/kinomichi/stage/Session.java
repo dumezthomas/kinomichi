@@ -1,7 +1,6 @@
 package be.technifutur.kinomichi.stage;
 
-import be.technifutur.kinomichi.exception.NotAnInstructorException;
-import be.technifutur.kinomichi.exception.WeekdayException;
+import be.technifutur.kinomichi.exception.KinomichiException;
 import be.technifutur.kinomichi.person.Person;
 
 import java.time.DayOfWeek;
@@ -39,7 +38,7 @@ public class Session {
         DayOfWeek day = startDateTime.getDayOfWeek();
 
         if (day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY) {
-            throw new WeekdayException("Une plage doit être programmée le samedi ou le dimanche");
+            throw new KinomichiException("Une plage doit être programmée le samedi ou le dimanche");
         }
         this.startDateTime = startDateTime;
     }
@@ -53,7 +52,7 @@ public class Session {
         if (instructor.isInstructor()) {
             this.instructor = instructor;
         } else {
-            throw new NotAnInstructorException(instructor.getFullName() + " n'est pas un formateur !");
+            throw new KinomichiException(instructor.getFullName() + " n'est pas un formateur !");
         }
     }
 

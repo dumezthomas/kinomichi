@@ -1,10 +1,11 @@
 package be.technifutur.kinomichi.menu;
 
-import be.technifutur.kinomichi.util.ConsoleUI;
+import be.technifutur.kinomichi.exception.InvalidMenuChoiceException;
 
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
-import static be.technifutur.kinomichi.util.ConsoleUI.*;
+import static be.technifutur.kinomichi.util.ConsoleUtil.*;
 
 public abstract class MenuAbstract {
     private final Scanner scanner;
@@ -22,29 +23,32 @@ public abstract class MenuAbstract {
 
         do {
             displayMenu();
-            ConsoleUI.printMenuPrompt();
-            choice = readInt();
+            printMenuPrompt();
+            choice = readChoice();
 
-            if (isValidChoice(choice)) {
-                executeChoice(choice);
-                if (choice != 0) {
-                    printPause(scanner);
-                }
-            } else {
-                printError("Option invalide !");
+            executeChoice(choice);
+            if (choice != 0) {
+                printPause(scanner);
             }
+
         } while (choice != 0);
     }
 
-    private int readInt() {
+    private int readChoice() {
         while (true) {
             try {
                 int choice = scanner.nextInt();
                 scanner.nextLine();
 
+                if (!isValidChoice(choice)) {
+                    throw new InvalidMenuChoiceException(String.valueOf(choice));
+                }
+
                 return choice;
-            } catch (Exception e) {
-                printError("Entrée invalide, entrez un nombre !");
+            } catch (InvalidMenuChoiceException e) {
+                printError("Choix invalide !");
+            } catch (InputMismatchException e) {
+                printError("Veuillez entrer un nombre !");
                 scanner.nextLine();
             }
         }
@@ -54,6 +58,10 @@ public abstract class MenuAbstract {
         printMenuTitle(menuTitle);
         displayOptions();
         printMenuExit(quitMessage);
+    }
+
+    protected Scanner getScanner() {
+        return scanner;
     }
 
     protected abstract void displayOptions();

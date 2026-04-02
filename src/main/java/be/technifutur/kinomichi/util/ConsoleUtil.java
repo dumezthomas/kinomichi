@@ -3,7 +3,7 @@ package be.technifutur.kinomichi.util;
 
 import java.util.Scanner;
 
-public class ConsoleUI {
+public class ConsoleUtil {
     public static final String RESET = "\u001B[0m";
 
     public static final String RED = "\u001B[31m";
@@ -13,36 +13,46 @@ public class ConsoleUI {
 
     public static final String BOLD = "\u001B[1m";
 
-    private static final int WIDTH = 41;
+    private static final int NB_DASH = 45;
 
     private static void printMenuDashLine() {
-        System.out.println("+" + "-".repeat(WIDTH - 2) + "+");
+        System.out.println("+" + "-".repeat(NB_DASH) + "+");
     }
 
     public static void printMenuTitle(String title) {
+        System.out.println();
         printMenuDashLine();
-        System.out.println(" " + title);
+        System.out.println("    " + BOLD + title.toUpperCase() + RESET);
         printMenuDashLine();
     }
 
-    public static void printMenuSection(String title) {
+    public static void printMenuSection(String section) {
         System.out.println();
-        System.out.println(CYAN + "[ " + title + " ]" + RESET);
+        System.out.println(CYAN + "[ " + section.toUpperCase() + " ]" + RESET);
     }
 
     public static void printMenuOption(int option, String label) {
-        System.out.printf(" %d. %s%n", option, label);
+        System.out.printf(BOLD + " %d" + RESET + ". %s%n", option, label);
     }
 
     public static void printMenuExit(String quitMessage) {
         System.out.println();
         printMenuDashLine();
-        System.out.println(" 0. " + quitMessage);
+        System.out.println(BOLD + " 0" + RESET + ". " + quitMessage);
         printMenuDashLine();
     }
 
     public static void printMenuPrompt() {
-        System.out.print("\nVotre choix : ");
+        System.out.println();
+        System.out.print(CYAN + "Votre choix : " + RESET);
+    }
+
+    public static void printMenuChoice(int option, String label) {
+        System.out.println();
+        printMenuDashLine();
+        System.out.printf(BOLD + " %d" + RESET + ". %s%n", option, label);
+        printMenuDashLine();
+        System.out.println();
     }
 
     public static void printSuccess(String message) {
@@ -58,7 +68,8 @@ public class ConsoleUI {
     }
 
     public static void printPause(Scanner scanner) {
-        System.out.println("\nAppuyez sur Entrée pour continuer...");
+        System.out.println();
+        System.out.println(YELLOW + "Appuyez sur Entrée pour continuer..." + RESET);
         scanner.nextLine();
     }
 }

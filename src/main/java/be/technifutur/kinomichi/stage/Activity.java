@@ -1,6 +1,6 @@
 package be.technifutur.kinomichi.stage;
 
-import be.technifutur.kinomichi.exception.WeekdayException;
+import be.technifutur.kinomichi.exception.KinomichiException;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
@@ -34,7 +34,7 @@ public class Activity {
         DayOfWeek day = startDateTime.getDayOfWeek();
 
         if (day != DayOfWeek.SATURDAY) {
-            throw new WeekdayException("Une activité doit être programmée le samedi");
+            throw new KinomichiException("Une activité doit être programmée le samedi");
         }
         this.startDateTime = startDateTime;
     }
