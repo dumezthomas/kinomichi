@@ -70,16 +70,11 @@ public class Session implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
 
         Session session = (Session) o;
-        return name.equals(session.name)
-                && startDateTime.equals(session.startDateTime)
-                && duration == session.duration;
+        return name.equals(session.name);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hashCode(name);
-        result = 31 * result + Objects.hashCode(startDateTime);
-        result = 31 * result + Objects.hashCode(duration);
-        return result;
+        return name.hashCode();
     }
 }

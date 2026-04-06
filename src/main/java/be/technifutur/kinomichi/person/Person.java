@@ -1,10 +1,16 @@
 package be.technifutur.kinomichi.person;
 
+import be.technifutur.kinomichi.exception.KinomichiException;
+import be.technifutur.kinomichi.util.DateUtil;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.Objects;
+
+import static be.technifutur.kinomichi.util.ConsoleUtil.*;
+import static be.technifutur.kinomichi.util.DateUtil.isTodayOrFuture;
 
 public class Person implements Serializable {
     @Serial
@@ -12,21 +18,30 @@ public class Person implements Serializable {
 
     private final String firstName;
     private final String lastName;
+    private final LocalDate dateOfBirth;
     private String email;
     private String phoneNumber;
     private String club;
-    private final boolean instructor;
+    private boolean instructor;
 
-    private final LocalDate dateOfBirth;
 
-    public Person(String firstName, String lastName, String email, String phoneNumber, String club, LocalDate dateOfBirth, boolean instructor) {
+    public Person(String firstName, String lastName, LocalDate dateOfBirth, String email, String phoneNumber, String club, boolean instructor) {
+        if (isTodayOrFuture(Objects.requireNonNull(dateOfBirth))) {
+            throw new KinomichiException("La date de naissance doit être dans le passé.");
+        }
+
         this.firstName = Objects.requireNonNull(firstName);
         this.lastName = Objects.requireNonNull(lastName);
+        this.dateOfBirth = dateOfBirth;
         this.email = email;
         this.phoneNumber = phoneNumber;
         this.club = club;
-        this.dateOfBirth = Objects.requireNonNull(dateOfBirth);
-        this.instructor = instructor;
+
+        if (instructor && isChild()) {
+            throw new KinomichiException("Un enfant ne peut pas être formateur !");
+        } else {
+            this.instructor = instructor;
+        }
     }
 
     public int getAge() {
@@ -45,44 +60,38 @@ public class Person implements Serializable {
         return firstName + " " + lastName;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    public String getClub() {
-        return club;
-    }
-
-    public void setClub(String club) {
-        this.club = club;
-    }
-
     public LocalDate getDateOfBirth() {
         return dateOfBirth;
     }
 
     public boolean isInstructor() {
         return instructor;
+    }
+
+    public void becameInstructor() {
+        this.instructor = true;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void setClub(String club) {
+        this.club = club;
+    }
+
+    @Override
+    public String toString() {
+        String instructor = isInstructor() ? (YELLOW + " [ Formateur ]" + RESET) : "";
+        return BOLD + getFullName() + RESET + instructor + "\n" +
+                "  |  Age : " + getAge() + " (" + DateUtil.format(dateOfBirth) + ")\n" +
+                "  |  E-mail : " + email + "\n" +
+                "  |  Téléphone : " + phoneNumber + "\n" +
+                "  |  Club : " + club + "\n";
     }
 
     @Override

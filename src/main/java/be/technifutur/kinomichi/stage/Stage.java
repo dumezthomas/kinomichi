@@ -2,6 +2,7 @@ package be.technifutur.kinomichi.stage;
 
 import be.technifutur.kinomichi.exception.KinomichiException;
 import be.technifutur.kinomichi.exception.StageStatusException;
+import be.technifutur.kinomichi.util.DateUtil;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -66,20 +67,18 @@ public class Stage implements Serializable {
         status = StageStatus.CLOSED;
     }
 
-    public boolean addActivity(Activity activity) {
+    public void addActivity(Activity activity) {
         checkDraft();
         if (activities.contains(activity)) {
-            return false;
+            throw new KinomichiException("Cette activité existe déjà.");
         }
         this.activities.add(activity);
         this.activities.sort(Comparator.comparing(Activity::getName));
-        return true;
     }
 
-    public boolean removeActivity(Activity activity) {
+    public void removeActivity(Activity activity) {
         checkDraft();
         this.activities.remove(activity);
-        return true;
     }
 
     public List<Activity> getActivities() {
@@ -96,24 +95,25 @@ public class Stage implements Serializable {
 
     public void addSession(Session session) {
         checkDraft();
-        LocalDate startDate = session.getStartDateTime().toLocalDate();
-        if (!isSaturday(startDate) && !isSunday(startDate)) {
+
+        if (sessions.contains(session)) {
+            throw new KinomichiException("Cette session existe déjà.");
+        }
+
+        if (!isWeekend(session.getStartDateTime())) {
             throw new KinomichiException("La date entrée n'est pas un samedi ou un dimanche.");
         }
 
-        DayOfWeek day = startDate.getDayOfWeek();
-
-        long count = sessions.stream()
-                .filter(s -> s.getStartDateTime().getDayOfWeek() == day)
-                .count();
-
-        if (day == DayOfWeek.SATURDAY && count >= 5) {
-            throw new KinomichiException("Maximum 5 sessions le samedi.");
+        DayOfWeek day = session.getStartDateTime().getDayOfWeek();
+        if (!canAddSession(day)) {
+            if (day == DayOfWeek.SATURDAY) {
+                throw new KinomichiException("Maximum 5 sessions le samedi.");
+            } else {
+                throw new KinomichiException("Maximum 3 sessions le dimanche.");
+            }
         }
 
-        if (day == DayOfWeek.SUNDAY && count >= 3) {
-            throw new KinomichiException("Maximum 3 sessions le dimanche.");
-        }
+        checkNoOverlap(session);
 
         this.sessions.add(session);
         this.sessions.sort(Comparator.comparing(Session::getStartDateTime));
@@ -134,6 +134,18 @@ public class Stage implements Serializable {
 
     public boolean isSessionUnique(String name) {
         return sessions.stream().noneMatch(session -> session.getName().equals(name));
+    }
+
+    public boolean canAddSession(DayOfWeek day) {
+        long count = sessions.stream()
+                .filter(s -> s.getStartDateTime().getDayOfWeek() == day)
+                .count();
+
+        return switch (day) {
+            case SATURDAY -> count < 5;
+            case SUNDAY -> count < 3;
+            default -> false;
+        };
     }
 
     public String getName() {
@@ -157,6 +169,24 @@ public class Stage implements Serializable {
         this.cappedPrice = cappedPrice;
     }
 
+    private void checkDraft() {
+        if (!isDraft()) {
+            throw new StageStatusException("Le stage n'est pas en mode DRAFT mais " + status.toString() + ".");
+        }
+    }
+
+    private void checkNoOverlap(Session newSession) {
+        for (Session existing : sessions) {
+            boolean overlap =
+                    newSession.getStartDateTime().isBefore(existing.getEndDateTime())
+                            && existing.getStartDateTime().isBefore(newSession.getEndDateTime());
+
+            if (overlap) {
+                throw new KinomichiException("La session chevauche une session existante.");
+            }
+        }
+    }
+
     @Override
     public String toString() {
         String color = switch (status) {
@@ -174,16 +204,33 @@ public class Stage implements Serializable {
                 + "  |  Activités : " + activities.size() + "\n";
 
         StringBuilder sbSessions = new StringBuilder();
-        StringBuilder sbActivity = new StringBuilder();
+        if (!sessions.isEmpty()) {
+            sbSessions.append("\n");
+            sbSessions.append(String.format("%-3s %-25s %-25s %-10s %-10s %-10s %-35s%n", "#", "Activité", "Formateur", "Adulte", "Enfant", "Formateur", "Date"));
+            sbSessions.append("--------------------------------------------------------------------------------------------------------");
 
+            for (int i = 0; i < sessions.size(); i++) {
+                Session session = sessions.get(i);
+                sbSessions.append(String.format("%-3s %-25s %-25s %-10s %-10s %-10s %-35s%n",
+                        BOLD + (i + 1) + RESET + ". ",
+                        session.getName(),
+                        session.getInstructor().getFullName(),
+                        session.getPrice().adult(),
+                        session.getPrice().child(),
+                        session.getPrice().instructor(),
+                        DateUtil.formatDateTime(session.getStartDateTime(), session.getDuration())));
+            }
+        }
+
+        StringBuilder sbActivity = new StringBuilder();
         if (!activities.isEmpty()) {
             sbActivity.append("\n");
-            sbActivity.append(String.format("%-3s %-25s %-10s %-10s %-10s%n", "#", "Activité", "Adulte", "Enfant", "Formateur"));
+            sbActivity.append(String.format("%-3s %-25s %-12s %-12s %-12s%n", "#", "Activité", "Adulte", "Enfant", "Formateur"));
             sbActivity.append("-------------------------------------------------------------------\n");
 
             for (int i = 0; i < activities.size(); i++) {
                 Activity activity = activities.get(i);
-                sbActivity.append(String.format("%-3s %-25s %-10s %-10s %-10s%n",
+                sbActivity.append(String.format("%-3s %-25s %-12s %-12s %-12s%n",
                         BOLD + (i + 1) + RESET + ". ",
                         activity.getName(),
                         activity.getPrice().adult(),
@@ -206,11 +253,5 @@ public class Stage implements Serializable {
     @Override
     public int hashCode() {
         return name.hashCode();
-    }
-
-    private void checkDraft() {
-        if (!isDraft()) {
-            throw new StageStatusException("Le stage n'est pas en mode DRAFT mais " + status.toString() + ".");
-        }
     }
 }

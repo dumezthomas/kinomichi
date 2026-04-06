@@ -1,6 +1,9 @@
 package be.technifutur.kinomichi.menu;
 
 import be.technifutur.kinomichi.exception.InvalidMenuChoiceException;
+import be.technifutur.kinomichi.exception.KinomichiException;
+import be.technifutur.kinomichi.person.Person;
+import be.technifutur.kinomichi.person.PersonService;
 import be.technifutur.kinomichi.stage.Stage;
 import be.technifutur.kinomichi.stage.StageService;
 import be.technifutur.kinomichi.util.DateUtil;
@@ -8,6 +11,7 @@ import be.technifutur.kinomichi.util.DateUtil;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.Comparator;
 import java.util.InputMismatchException;
 import java.util.List;
@@ -18,13 +22,15 @@ import static be.technifutur.kinomichi.util.ConsoleUtil.*;
 
 public class MenuPrincipal extends MenuAbstract {
     private final StageService stageService;
+    private final PersonService personService;
 
-    public MenuPrincipal(Scanner scanner, StageService stageService) {
+    public MenuPrincipal(Scanner scanner, StageService stageService, PersonService personService) {
         super(scanner,
                 "Menu Principal",
                 null,
                 "Quitter l'application");
         this.stageService = stageService;
+        this.personService = personService;
     }
 
     @Override
@@ -36,110 +42,143 @@ public class MenuPrincipal extends MenuAbstract {
         printMenuOption(4, "Éditer un stage", !stageService.isStagesEmpty());
 
         printMenuSection("Participants");
-        printMenuOption(5, "Afficher les participants/formateurs", false);
-        printMenuOption(6, "Afficher un participant/formateur", false);
-        printMenuOption(7, "Ajouter un participant/formateur", false);
-        printMenuOption(9, "Éditer un participant/formateur", false);
+        printMenuOption(5, "Afficher les participants", !personService.isPeopleEmpty());
+        printMenuOption(6, "Afficher un participant", !personService.isPeopleEmpty());
+        printMenuOption(7, "Ajouter un participant", true);
+        printMenuOption(8, "Éditer un participant", !personService.isPeopleEmpty());
 
         printMenuSection("Réservations");
-        printMenuOption(10, "Afficher les réservations", false);
-        printMenuOption(11, "Afficher une réservation", false);
-        printMenuOption(12, "Prendre une réservation", false);
-        printMenuOption(13, "Modifier une réservation", false);
+        printMenuOption(9, "Afficher les réservations pour un stage", false);
+        printMenuOption(10, "Afficher les réservation pour un participant", false);
+        printMenuOption(11, "Prendre une réservation", false);
+        printMenuOption(12, "Modifier une réservation", false);
     }
 
     @Override
     protected boolean executeChoice(int choice) {
-        switch (choice) {
-            case 1 -> {
-                if (!stageService.isStagesEmpty()) {
-                    printMenuChoice(1, "Afficher les stages");
-                    displayStages(stageService.getStagesSorted(Comparator.comparing(Stage::getStartDate)));
-                } else {
-                    printWarning("Option indisponible: Aucun stage à afficher.");
-                }
-            }
-
-            case 2 -> {
-                if (!stageService.isStagesEmpty()) {
-                    printMenuChoice(2, "Afficher un stage");
-                    Stage stage = selectStage(
-                            Comparator.comparing(Stage::getStartDate),
-                            null);
-                    if (stage != null) {
-                        System.out.println();
-                        System.out.println(stage);
+        try {
+            switch (choice) {
+                case 1 -> {
+                    if (!stageService.isStagesEmpty()) {
+                        printMenuChoice(1, "Afficher les stages");
+                        displayStages(stageService.getStagesSorted(Comparator.comparing(Stage::getStartDate)));
+                    } else {
+                        printWarning("Option indisponible: Aucun stage à afficher.");
                     }
-                } else {
-                    printWarning("Option indisponible: Aucun stage à afficher.");
                 }
-            }
 
-            case 3 -> {
-                printMenuChoice(3, "Créer un stage");
-                Stage stage = addStage();
-                if (stage != null) {
-                    MenuStage menu = new MenuStage(getScanner(), stageService, stage);
-                    menu.show();
+                case 2 -> {
+                    if (!stageService.isStagesEmpty()) {
+                        printMenuChoice(2, "Afficher un stage");
+                        Stage stage = selectStage(
+                                Comparator.comparing(Stage::getStartDate),
+                                null);
+                        if (stage != null) {
+                            System.out.println();
+                            System.out.print(stage);
+                        }
+                    } else {
+                        printWarning("Option indisponible: Aucun stage à afficher.");
+                    }
                 }
-            }
 
-            case 4 -> {
-                if (!stageService.isStagesEmpty()) {
-                    printMenuChoice(4, "Éditer un stage");
-                    Stage stage = selectStage(
-                            Comparator.comparing(Stage::getStartDate),
-                            null);
+                case 3 -> {
+                    printMenuChoice(3, "Créer un stage");
+                    Stage stage = addStage();
                     if (stage != null) {
                         MenuStage menu = new MenuStage(getScanner(), stageService, stage);
                         menu.show();
                     }
-                } else {
-                    printWarning("Option indisponible: Aucun stage à éditer.");
+                }
+
+                case 4 -> {
+                    if (!stageService.isStagesEmpty()) {
+                        printMenuChoice(4, "Éditer un stage");
+                        Stage stage = selectStage(
+                                Comparator.comparing(Stage::getStartDate),
+                                null);
+                        if (stage != null) {
+                            MenuStage menu = new MenuStage(getScanner(), stageService, stage);
+                            menu.show();
+                        }
+                    } else {
+                        printWarning("Option indisponible: Aucun stage à éditer.");
+                    }
+                }
+
+                case 5 -> {
+                    if (!personService.isPeopleEmpty()) {
+                        printMenuChoice(5, "Afficher les participants");
+                        displayPeople(personService.getPeopleSorted(Comparator.comparing(Person::getFullName)));
+                    } else {
+                        printWarning("Option indisponible: Aucun participant à afficher.");
+                    }
+                }
+
+                case 6 -> {
+                    if (!personService.isPeopleEmpty()) {
+                        printMenuChoice(6, "Afficher un participant");
+                        Person person = selectPerson(
+                                Comparator.comparing(Person::getFullName),
+                                null);
+                        if (person != null) {
+                            System.out.println();
+                            System.out.print(person);
+                        }
+                    } else {
+                        printWarning("Option indisponible: Aucun participant à afficher.");
+                    }
+                }
+
+                case 7 -> {
+                    printMenuChoice(7, "Ajouter un participant");
+                    Person person = addPerson();
+                    if (person != null) {
+                        MenuPerson menu = new MenuPerson(getScanner(), personService, person);
+                        menu.show();
+                    }
+                }
+
+                case 8 -> {
+                    if (!personService.isPeopleEmpty()) {
+                        printMenuChoice(8, "Éditer un participant");
+                        Person person = selectPerson(
+                                Comparator.comparing(Person::getFullName),
+                                null);
+                        if (person != null) {
+                            MenuPerson menu = new MenuPerson(getScanner(), personService, person);
+                            menu.show();
+                        }
+                    } else {
+                        printWarning("Option indisponible: Aucun participant à éditer.");
+                    }
+                }
+
+                case 9 -> {
+                    printWarning("Option indisponible: Pas encore implémenté.");
+                }
+
+                case 10 -> {
+                    printWarning("Option indisponible: Pas encore implémenté.");
+                }
+
+                case 11 -> {
+                    printWarning("Option indisponible: Pas encore implémenté.");
+                }
+
+                case 12 -> {
+                    printWarning("Option indisponible: Pas encore implémenté.");
+                }
+
+                case 0 -> {
+                    printMenuChoice(0, "Quitter l'application");
+                    System.out.println("Au revoir !");
+                    return false;
                 }
             }
-
-            case 5 -> {
-                printWarning("Option indisponible: Pas encore implémenté.");
-            }
-
-            case 6 -> {
-                printWarning("Option indisponible: Pas encore implémenté.");
-            }
-
-            case 7 -> {
-                printWarning("Option indisponible: Pas encore implémenté.");
-            }
-
-            case 8 -> {
-                printWarning("Option indisponible: Pas encore implémenté.");
-            }
-
-            case 9 -> {
-                printWarning("Option indisponible: Pas encore implémenté.");
-            }
-
-            case 10 -> {
-                printWarning("Option indisponible: Pas encore implémenté.");
-            }
-
-            case 11 -> {
-                printWarning("Option indisponible: Pas encore implémenté.");
-            }
-
-            case 12 -> {
-                printWarning("Option indisponible: Pas encore implémenté.");
-            }
-
-            case 13 -> {
-                printWarning("Option indisponible: Pas encore implémenté.");
-            }
-
-            case 0 -> {
-                printMenuChoice(0, "Quitter l'application");
-                System.out.println("Au revoir !");
-                return false;
-            }
+        } catch (KinomichiException e) {
+            printError(e.getMessage());
+            return true;
         }
 
         return true;
@@ -147,7 +186,7 @@ public class MenuPrincipal extends MenuAbstract {
 
     @Override
     protected boolean isValidChoice(int choice) {
-        return choice >= 0 && choice <= 13;
+        return choice >= 0 && choice <= 12;
     }
 
     private void displayStages(List<Stage> stages) {
@@ -169,6 +208,28 @@ public class MenuPrincipal extends MenuAbstract {
                     stage.getSessions().size(),
                     stage.getActivities().size(),
                     DateUtil.formatWeekend(stage.getStartDate()));
+        }
+    }
+
+    private void displayPeople(List<Person> people) {
+        if (people.isEmpty()) {
+            printWarning("Aucun participant.");
+            return;
+        }
+
+        System.out.printf("%-3s %-25s %-20s %-10s %-10s %-10s%n", "#", "Nom", "Date de naissance", "Adulte", "Enfant", "Formateur");
+        System.out.println("-----------------------------------------------------------------------------------------");
+
+        for (int i = 0; i < people.size(); i++) {
+            Person person = people.get(i);
+
+            System.out.printf("%-3s %-25s %-20s %-10s %-10s %-10s%n",
+                    BOLD + (i + 1) + RESET + ". ",
+                    person.getFullName(),
+                    DateUtil.format(person.getDateOfBirth()),
+                    person.isChild() ? "" : "V",
+                    person.isChild() ? "V" : "",
+                    person.isInstructor() ? "V" : "");
         }
     }
 
@@ -210,8 +271,46 @@ public class MenuPrincipal extends MenuAbstract {
         }
     }
 
+    public Person selectPerson(Comparator<Person> comparator, Predicate<Person> filter) {
+        List<Person> people = filter == null ?
+                personService.getPeopleSorted(comparator) :
+                personService.getPeopleSortedAndFiltered(comparator, filter);
+
+        if (people.isEmpty()) {
+            printWarning("Aucun participant disponible.");
+            return null;
+        }
+
+        displayPeople(people);
+        System.out.printf("%-3s %-25s%n", BOLD + "0" + RESET + ". ", "Retour");
+        System.out.println();
+        System.out.print(CYAN + "Choisissez un participant (numéro) : " + RESET);
+
+        while (true) {
+            try {
+                int choice = getScanner().nextInt();
+                getScanner().nextLine();
+
+                if (choice < 0 || choice > people.size()) {
+                    throw new InvalidMenuChoiceException(String.valueOf(choice));
+                }
+
+                if (choice == 0) {
+                    return null;
+                } else {
+                    return people.get(choice - 1);
+                }
+            } catch (InvalidMenuChoiceException e) {
+                printError("Choix invalide !");
+            } catch (InputMismatchException e) {
+                printError("Veuillez entrer un nombre !");
+                getScanner().nextLine();
+            }
+        }
+    }
+
     private Stage addStage() {
-        String name = askName();
+        String name = askStageName();
 
         System.out.print("Courte description du stage : ");
         String shortDescription = getScanner().nextLine();
@@ -230,7 +329,36 @@ public class MenuPrincipal extends MenuAbstract {
         }
     }
 
-    private String askName() {
+    private Person addPerson() {
+        String firstName = askPersonFirstName();
+        String lastName = askPersonLastName();
+        LocalDate birthday = askBirthday();
+
+        System.out.print("E-mail : ");
+        String email = getScanner().nextLine();
+
+        System.out.print("Téléphone : ");
+        String phoneNumber = getScanner().nextLine();
+
+        System.out.print("Club de Kinomichi : ");
+        String club = getScanner().nextLine();
+
+        boolean instructor = askIsInstructor(birthday);
+
+        Person person = new Person(firstName, lastName, birthday, email, phoneNumber, club, instructor);
+
+        String instructorString = person.isInstructor() ? "formateur" : "participant";
+        System.out.println();
+        if (personService.add(person)) {
+            printSuccess("Le " + instructorString + " '" + person.getFullName() + "' a été ajouté !");
+            return person;
+        } else {
+            printError("Ce " + instructorString + " '" + person.getFullName() + "' existe déjà !");
+            return null;
+        }
+    }
+
+    private String askStageName() {
         while (true) {
             System.out.print("Nom du stage : ");
             String name = getScanner().nextLine().trim();
@@ -245,9 +373,35 @@ public class MenuPrincipal extends MenuAbstract {
         }
     }
 
+    private String askPersonFirstName() {
+        while (true) {
+            System.out.print("Prénom : ");
+            String name = getScanner().nextLine().trim();
+
+            if (name.isEmpty()) {
+                printWarning("Le prénom ne peut pas être vide.");
+            } else {
+                return name;
+            }
+        }
+    }
+
+    private String askPersonLastName() {
+        while (true) {
+            System.out.print("Nom : ");
+            String name = getScanner().nextLine().trim();
+
+            if (name.isEmpty()) {
+                printWarning("Le nom ne peut pas être vide.");
+            } else {
+                return name;
+            }
+        }
+    }
+
     private LocalDate askStartDate() {
         while (true) {
-            System.out.print("Date du premier jour du stage (un samedi)(format: DD-MM-YYYY) : ");
+            System.out.print("Date du premier jour du stage (un samedi)(format DD-MM-YYYY) : ");
             String input = getScanner().nextLine();
 
             try {
@@ -263,6 +417,46 @@ public class MenuPrincipal extends MenuAbstract {
             } catch (Exception e) {
                 printWarning("Le format est invalide. Utilisez DD-MM-YYYY.");
             }
+        }
+    }
+
+    private LocalDate askBirthday() {
+        while (true) {
+            System.out.print("Date de naissance (format DD-MM-YYYY) : ");
+            String input = getScanner().nextLine();
+
+            try {
+                LocalDate date = DateUtil.parse(input);
+
+                if (DateUtil.isTodayOrFuture(date)) {
+                    printWarning("La date de naissance doit être dans le passé.");
+                } else {
+                    return date;
+                }
+            } catch (Exception e) {
+                printWarning("Le format est invalide. Utilisez DD-MM-YYYY.");
+            }
+        }
+    }
+
+    private boolean askIsInstructor(LocalDate birthDate) {
+        if (Period.between(birthDate, LocalDate.now()).getYears() < 18) {
+            return false;
+        }
+
+        while (true) {
+            System.out.print("Statut de formateur ? (y/n) : ");
+            String input = getScanner().nextLine().trim().toLowerCase();
+
+            if (input.equals("y")) {
+                return true;
+            }
+
+            if (input.equals("n")) {
+                return false;
+            }
+
+            printWarning("Entrée invalide. Tapez 'y' ou 'n'.");
         }
     }
 

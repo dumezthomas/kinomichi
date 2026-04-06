@@ -1,10 +1,17 @@
 package be.technifutur.kinomichi.menu;
 
 import be.technifutur.kinomichi.exception.InvalidMenuChoiceException;
+import be.technifutur.kinomichi.exception.KinomichiException;
+import be.technifutur.kinomichi.person.Person;
 import be.technifutur.kinomichi.stage.*;
+import be.technifutur.kinomichi.util.DateUtil;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 
@@ -27,11 +34,13 @@ public class MenuStage extends MenuAbstract {
     protected void displayOptions() {
         printMenuSection("Édition");
         printMenuOption(1, "Afficher '" + stage.getName() + "'", true);
-        printMenuOption(2, "Ajouter une session", stage.isDraft());
+        printMenuOption(2, "Ajouter une session",
+                stage.isDraft() &&
+                        (stage.canAddSession(DayOfWeek.SATURDAY) || stage.canAddSession(DayOfWeek.SUNDAY)));
         printMenuOption(3, "Supprimer une session", stage.isDraft() && !stage.isSessionsEmpty());
         printMenuOption(4, "Ajouter une activité", stage.isDraft());
         printMenuOption(5, "Supprimer une activité", stage.isDraft() && !stage.isActivitiesEmpty());
-        printMenuOption(6, "Modification du coût maximum", stage.isDraft());
+        printMenuOption(6, "Modifier le coût maximum", stage.isDraft());
 
         printMenuSection("Réservations");
         printMenuOption(7, "Ouvrir les réservations", stage.isDraft()
@@ -48,21 +57,33 @@ public class MenuStage extends MenuAbstract {
         switch (choice) {
             case 1 -> {
                 printMenuChoice(1, "Afficher '" + stage.getName() + "'");
-                System.out.println(stage);
+                System.out.print(stage);
             }
 
             case 2 -> {
-                if (stage.isDraft()) {
+                if (stage.isDraft() && (stage.canAddSession(DayOfWeek.SATURDAY) || stage.canAddSession(DayOfWeek.SUNDAY))) {
                     printMenuChoice(2, "Ajouter une session");
                     addSession();
-                } else {
+                } else if (stage.canAddSession(DayOfWeek.SATURDAY) || stage.canAddSession(DayOfWeek.SUNDAY)) {
                     printWarning("Option indisponible: Le stage n'est pas en mode DRAFT.");
+                } else {
+                    printWarning("Option indisponible: Nombre maximum de sessions atteint.");
                 }
             }
 
             case 3 -> {
                 if (stage.isDraft() && !stage.isSessionsEmpty()) {
                     printMenuChoice(3, "Supprimer une session");
+                    Session session = selectSession();
+                    if (session != null) {
+                        try {
+                            stage.removeSession(session);
+                            printSuccess("La session '" + session.getName() + "' a été supprimée !");
+                            stageService.save();
+                        } catch (KinomichiException e) {
+                            printError(e.getMessage());
+                        }
+                    }
                 } else if (!stage.isSessionsEmpty()) {
                     printWarning("Option indisponible: Le stage n'est pas en mode DRAFT.");
                 } else {
@@ -84,11 +105,12 @@ public class MenuStage extends MenuAbstract {
                     printMenuChoice(5, "Supprimer une activité");
                     Activity activity = selectActivity();
                     if (activity != null) {
-                        if (stage.removeActivity(activity)) {
+                        try {
+                            stage.removeActivity(activity);
                             printSuccess("L'activité' '" + activity.getName() + "' a été supprimée !");
                             stageService.save();
-                        } else {
-                            printError("Erreur lors de la suppression de l'activité '" + activity.getName() + "' !");
+                        } catch (KinomichiException e) {
+                            printError(e.getMessage());
                         }
                     }
                 } else if (!stage.isActivitiesEmpty()) {
@@ -100,7 +122,7 @@ public class MenuStage extends MenuAbstract {
 
             case 6 -> {
                 if (stage.isDraft()) {
-                    printMenuChoice(6, "Modification du coût maximum");
+                    printMenuChoice(6, "Modifier le coût maximum");
                     stage.setCappedPrice(askPrice("Coût maximum si le participant fait toutes les sessions (0 pour ignorer) : "));
                     System.out.println();
                     printSuccess("Le coût maximum a été modifié !");
@@ -146,7 +168,7 @@ public class MenuStage extends MenuAbstract {
 
             case 9 -> {
                 if (!stage.isOpen()) {
-                    printMenuChoice(9, "Supprimer un stage");
+                    printMenuChoice(9, "Supprimer '" + stage.getName() + "'");
                     if (stageService.remove(stage)) {
                         printSuccess("Le stage '" + stage.getName() + "' a été supprimé !");
                         return false;
@@ -172,6 +194,28 @@ public class MenuStage extends MenuAbstract {
         return choice >= 0 && choice <= 9;
     }
 
+    private void displaySessions() {
+        if (stage.getSessions().isEmpty()) {
+            printWarning("Aucune session.");
+            return;
+        }
+
+        System.out.printf("%-3s %-25s %-25s %-10s %-10s %-10s %-35s%n", "#", "Activité", "Formateur", "Adulte", "Enfant", "Formateur", "Date");
+        System.out.println("--------------------------------------------------------------------------------------------------------");
+
+        for (int i = 0; i < stage.getSessions().size(); i++) {
+            Session session = stage.getSessions().get(i);
+            System.out.printf("%-3s %-25s %-25s %-10s %-10s %-10s %-35s%n",
+                    BOLD + (i + 1) + RESET + ". ",
+                    session.getName(),
+                    session.getInstructor().getFullName(),
+                    session.getPrice().adult(),
+                    session.getPrice().child(),
+                    session.getPrice().instructor(),
+                    DateUtil.formatDateTime(session.getStartDateTime(), session.getDuration()));
+        }
+    }
+
     private void displayActivities() {
         if (stage.getActivities().isEmpty()) {
             printWarning("Aucune activité.");
@@ -189,6 +233,40 @@ public class MenuStage extends MenuAbstract {
                     activity.getPrice().adult(),
                     activity.getPrice().child(),
                     activity.getPrice().instructor());
+        }
+    }
+
+    public Session selectSession() {
+        if (stage.getSessions().isEmpty()) {
+            printWarning("Aucune session disponible.");
+            return null;
+        }
+
+        displaySessions();
+        System.out.printf("%-3s %-25s%n", BOLD + "0" + RESET + ". ", "Retour");
+        System.out.println();
+        System.out.print(CYAN + "Choisissez une session (numéro) : " + RESET);
+
+        while (true) {
+            try {
+                int choice = getScanner().nextInt();
+                getScanner().nextLine();
+
+                if (choice < 0 || choice > stage.getSessions().size()) {
+                    throw new InvalidMenuChoiceException(String.valueOf(choice));
+                }
+
+                if (choice == 0) {
+                    return null;
+                } else {
+                    return stage.getSessions().get(choice - 1);
+                }
+            } catch (InvalidMenuChoiceException e) {
+                printError("Choix invalide !");
+            } catch (InputMismatchException e) {
+                printError("Veuillez entrer un nombre !");
+                getScanner().nextLine();
+            }
         }
     }
 
@@ -226,6 +304,35 @@ public class MenuStage extends MenuAbstract {
         }
     }
 
+    private void addSession() {
+        String name = askSessionName();
+        LocalDateTime startDateTime = askStartDateTime();
+        int duration = askDuration();
+        BigDecimal adult = askPrice("Coût de la session pour un adulte : ");
+        BigDecimal child = askPrice("Coût de la session pour un enfant : ");
+        BigDecimal instructor = askPrice("Coût de la session pour un formateur : ");
+        Price price = new Price(adult, child, instructor);
+
+        Session session = new Session(name, startDateTime, duration, price, new Person(
+                "Thomas",
+                "Dumez",
+                LocalDate.of(1986, 9, 9),
+                "test@email.com",
+                "123456789",
+                "THE-CLUB",
+                true
+        ));
+
+        System.out.println();
+        try {
+            stage.addSession(session);
+            printSuccess("La session '" + session.getName() + "' a été ajoutée !");
+            stageService.save();
+        } catch (KinomichiException e) {
+            printError(e.getMessage());
+        }
+    }
+
     private void addActivity() {
         String name = askActivityName();
 
@@ -237,30 +344,27 @@ public class MenuStage extends MenuAbstract {
         Activity activity = new Activity(name, price);
 
         System.out.println();
-        if (stage.addActivity(activity)) {
+        try {
+            stage.addActivity(activity);
             printSuccess("L'activité '" + activity.getName() + "' a été ajoutée !");
             stageService.save();
-        } else {
-            printError("Erreur lors de l'ajout de l'activité '" + activity.getName() + "' !");
+        } catch (KinomichiException e) {
+            printError(e.getMessage());
         }
     }
 
-    private void addSession() {
-        String name = askActivityName();
+    private String askSessionName() {
+        while (true) {
+            System.out.print("Nom de la session : ");
+            String name = getScanner().nextLine().trim();
 
-        BigDecimal adult = askPrice("Coût de l'activité pour un adulte : ");
-        BigDecimal child = askPrice("Coût de l'activité pour un enfant : ");
-        BigDecimal instructor = askPrice("Coût de l'activité pour un formateur : ");
-        Price price = new Price(adult, child, instructor);
-
-        Activity activity = new Activity(name, price);
-
-        System.out.println();
-        if (stage.addActivity(activity)) {
-            printSuccess("L'activité '" + activity.getName() + "' a été ajoutée !");
-            stageService.save();
-        } else {
-            printError("Erreur lors de l'ajout de l'activité '" + activity.getName() + "' !");
+            if (name.isEmpty()) {
+                printWarning("Le nom de la session ne peut pas être vide.");
+            } else if (stage.isSessionUnique(name)) {
+                return name;
+            } else {
+                printWarning("La session '" + name + "' existe déjà !");
+            }
         }
     }
 
@@ -275,6 +379,96 @@ public class MenuStage extends MenuAbstract {
                 return name;
             } else {
                 printWarning("L'activité '" + name + "' existe déjà !");
+            }
+        }
+    }
+
+    private DayOfWeek askDay(Stage stage) {
+        boolean canSaturday = stage.canAddSession(DayOfWeek.SATURDAY);
+        boolean canSunday = stage.canAddSession(DayOfWeek.SUNDAY);
+
+        if (!canSaturday && !canSunday) {
+            return null;
+        }
+
+        while (true) {
+            System.out.println("Jour de la session : ");
+            System.out.println((canSaturday ? "" : GRAY) + BOLD + "1" + RESET + (canSaturday ? "" : GRAY) + ". Samedi");
+            System.out.println((canSunday ? "" : GRAY) + BOLD + "2" + RESET + (canSaturday ? "" : GRAY) + ". Dimanche");
+
+            System.out.print("Votre choix : ");
+            String input = getScanner().nextLine();
+
+            if (input.equals("1") && canSaturday) {
+                return DayOfWeek.SATURDAY;
+            } else if (input.equals("1")) {
+                printWarning("Nombre maximum de sessions atteint le samedi.");
+            }
+
+            if (input.equals("2") && canSunday) {
+                return DayOfWeek.SUNDAY;
+            } else if (input.equals("2")) {
+                printWarning("Nombre maximum de sessions atteint le dimanche.");
+            }
+
+            printError("Choix invalide !");
+        }
+    }
+
+    private LocalTime askTime() {
+        while (true) {
+            System.out.print("Heure de début de la session (entre 09:00 et 17:00 - arrondi à 15 min)(format HH:mm) : ");
+            String input = getScanner().nextLine();
+
+            try {
+                LocalTime time = LocalTime.parse(input);
+
+                int hour = time.getHour();
+                int minute = time.getMinute();
+
+                if (hour < 9 || hour > 17 || (hour == 17 && minute > 0)) {
+                    printWarning("L'heure doit être comprise entre 09:00 et 17:00.");
+                } else if (minute % 15 != 0) {
+                    printWarning("Les minutes doivent être un multiple de 15 (00, 15, 30, 45).");
+                } else {
+                    return time;
+                }
+            } catch (Exception e) {
+                printWarning("Le format est invalide. Utilisez HH:mm.");
+            }
+        }
+    }
+
+    private LocalDateTime askStartDateTime() {
+        DayOfWeek day = askDay(stage);
+        if (day == null) {
+            return null;
+        }
+
+        LocalDate date = stage.getStartDate();
+
+        if (day == DayOfWeek.SUNDAY) {
+            date = date.plusDays(1);
+        }
+
+        return date.atTime(askTime());
+    }
+
+    private int askDuration() {
+        while (true) {
+            System.out.print("Durée en minute de la session (entre 15 et 120 min - arrondi à 15 min) : ");
+            String input = getScanner().nextLine();
+
+            try {
+                int duration = (int) Math.round(Integer.parseInt(input) / 15.0) * 15;
+
+                if (duration < 15 || duration > 120) {
+                    printWarning("La durée de la session doit être comprise entre 15 et 120 minutes.");
+                } else {
+                    return duration;
+                }
+            } catch (NumberFormatException e) {
+                printWarning("Le format est invalide. Le nombre doit être entier.");
             }
         }
     }

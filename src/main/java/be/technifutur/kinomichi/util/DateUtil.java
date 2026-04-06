@@ -30,10 +30,6 @@ public final class DateUtil {
         return date.getDayOfWeek() == DayOfWeek.SATURDAY;
     }
 
-    public static boolean isSunday(LocalDate date) {
-        return date.getDayOfWeek() == DayOfWeek.SUNDAY;
-    }
-
     public static boolean isSunday(LocalDateTime date) {
         return date.getDayOfWeek() == DayOfWeek.SUNDAY;
     }
