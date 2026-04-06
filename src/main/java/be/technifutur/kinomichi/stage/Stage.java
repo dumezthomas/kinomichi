@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import static be.technifutur.kinomichi.util.ConsoleUtil.*;
 import static be.technifutur.kinomichi.util.DateUtil.*;
@@ -32,7 +32,7 @@ public class Stage implements Serializable {
         if (!isTodayOrFuture(Objects.requireNonNull(startDate))) {
             throw new KinomichiException("La date entrée est passée.");
         }
-        if (!isSaturday(Objects.requireNonNull(startDate))) {
+        if (!isSaturday(startDate)) {
             throw new KinomichiException("La date entrée n'est pas un samedi.");
         }
 
@@ -58,9 +58,7 @@ public class Stage implements Serializable {
     }
 
     public void open() {
-        if (!isDraft()) {
-            throw new StageStatusException("Le stage n'est pas en mode DRAFT mais " + status.toString() + ".");
-        }
+        checkDraft();
         status = StageStatus.OPEN;
     }
 
@@ -68,36 +66,36 @@ public class Stage implements Serializable {
         status = StageStatus.CLOSED;
     }
 
-    public void addActivity(Activity activity) {
-        if (!isDraft()) {
-            throw new StageStatusException("Le stage n'est pas en mode DRAFT mais " + status.toString() + ".");
+    public boolean addActivity(Activity activity) {
+        checkDraft();
+        if (activities.contains(activity)) {
+            return false;
         }
-
-        LocalDate startDate = activity.getStartDateTime().toLocalDate();
-        if (!isSaturday(startDate)) {
-            throw new KinomichiException("La date entrée n'est pas un samedi.");
-        }
-
         this.activities.add(activity);
+        this.activities.sort(Comparator.comparing(Activity::getName));
+        return true;
     }
 
-    public void removeActivity(Activity activity) {
-        if (!isDraft()) {
-            throw new StageStatusException("Le stage n'est pas en mode DRAFT mais " + status.toString() + ".");
-        }
-
+    public boolean removeActivity(Activity activity) {
+        checkDraft();
         this.activities.remove(activity);
+        return true;
     }
 
-    public Stream<Activity> streamActivities() {
-        return activities.stream();
+    public List<Activity> getActivities() {
+        return activities;
+    }
+
+    public boolean isActivitiesEmpty() {
+        return activities.isEmpty();
+    }
+
+    public boolean isActivityUnique(String name) {
+        return activities.stream().noneMatch(activity -> activity.getName().equals(name));
     }
 
     public void addSession(Session session) {
-        if (!isDraft()) {
-            throw new StageStatusException("Le stage n'est pas en mode DRAFT mais " + status.toString() + ".");
-        }
-
+        checkDraft();
         LocalDate startDate = session.getStartDateTime().toLocalDate();
         if (!isSaturday(startDate) && !isSunday(startDate)) {
             throw new KinomichiException("La date entrée n'est pas un samedi ou un dimanche.");
@@ -118,18 +116,24 @@ public class Stage implements Serializable {
         }
 
         this.sessions.add(session);
+        this.sessions.sort(Comparator.comparing(Session::getStartDateTime));
     }
 
     public void removeSession(Session session) {
-        if (!isDraft()) {
-            throw new StageStatusException("Le stage n'est pas en mode DRAFT mais " + status.toString() + ".");
-        }
-
+        checkDraft();
         this.sessions.remove(session);
     }
 
-    public Stream<Session> streamSessions() {
-        return sessions.stream();
+    public List<Session> getSessions() {
+        return sessions;
+    }
+
+    public boolean isSessionsEmpty() {
+        return sessions.isEmpty();
+    }
+
+    public boolean isSessionUnique(String name) {
+        return sessions.stream().noneMatch(session -> session.getName().equals(name));
     }
 
     public String getName() {
@@ -149,10 +153,7 @@ public class Stage implements Serializable {
     }
 
     public void setCappedPrice(BigDecimal cappedPrice) {
-        if (!isDraft()) {
-            throw new StageStatusException("Le stage n'est pas en mode DRAFT mais " + status.toString() + ".");
-        }
-
+        checkDraft();
         this.cappedPrice = cappedPrice;
     }
 
@@ -164,13 +165,34 @@ public class Stage implements Serializable {
             case CLOSED -> RED;
         };
 
-        return BOLD + name + RESET
+        String stage = BOLD + name + RESET
                 + color + " [" + status.toString().toUpperCase() + "]" + RESET
                 + " : " + formatWeekend(startDate) + "\n"
                 + "  |  Description : " + shortDescription + "\n"
-                + "  |  Prix maximum : " + cappedPrice + "€\n"
-                + "  |  Sessions :\n" + sessions
-                + "  |  Activités :\n" + activities;
+                + "  |  Coût maximum : " + cappedPrice + "€\n"
+                + "  |  Sessions : " + sessions.size() + "\n"
+                + "  |  Activités : " + activities.size() + "\n";
+
+        StringBuilder sbSessions = new StringBuilder();
+        StringBuilder sbActivity = new StringBuilder();
+
+        if (!activities.isEmpty()) {
+            sbActivity.append("\n");
+            sbActivity.append(String.format("%-3s %-25s %-10s %-10s %-10s%n", "#", "Activité", "Adulte", "Enfant", "Formateur"));
+            sbActivity.append("-------------------------------------------------------------------\n");
+
+            for (int i = 0; i < activities.size(); i++) {
+                Activity activity = activities.get(i);
+                sbActivity.append(String.format("%-3s %-25s %-10s %-10s %-10s%n",
+                        BOLD + (i + 1) + RESET + ". ",
+                        activity.getName(),
+                        activity.getPrice().adult(),
+                        activity.getPrice().child(),
+                        activity.getPrice().instructor()));
+            }
+        }
+
+        return stage + sbSessions + sbActivity;
     }
 
     @Override
@@ -184,5 +206,11 @@ public class Stage implements Serializable {
     @Override
     public int hashCode() {
         return name.hashCode();
+    }
+
+    private void checkDraft() {
+        if (!isDraft()) {
+            throw new StageStatusException("Le stage n'est pas en mode DRAFT mais " + status.toString() + ".");
+        }
     }
 }

@@ -2,10 +2,15 @@ package be.technifutur.kinomichi.stage;
 
 import be.technifutur.kinomichi.person.Person;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-public record Price(BigDecimal adult, BigDecimal child, BigDecimal instructor) {
+public record Price(BigDecimal adult, BigDecimal child, BigDecimal instructor) implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     public Price {
         Objects.requireNonNull(adult);
         Objects.requireNonNull(child);
@@ -18,7 +23,7 @@ public record Price(BigDecimal adult, BigDecimal child, BigDecimal instructor) {
         }
     }
 
-    public BigDecimal forParticipant(Person person) {
+    public BigDecimal forPerson(Person person) {
         if (person != null) {
             if (person.isInstructor()) {
                 return instructor;

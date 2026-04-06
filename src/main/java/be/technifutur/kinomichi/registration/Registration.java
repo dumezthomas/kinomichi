@@ -34,7 +34,7 @@ public class Registration {
             return false;
         }
 
-        return stage.streamSessions().allMatch(sessions::contains);
+        return sessions.containsAll(stage.getSessions());
     }
 
     public void addActivity(Activity activity) {
@@ -44,7 +44,7 @@ public class Registration {
             throw new StageStatusException("Le stage n'est pas ouvert.");
         }
 
-        if (stage.streamActivities().noneMatch(a -> a.equals(activity))) {
+        if (stage.getActivities().stream().noneMatch(a -> a.equals(activity))) {
             throw new KinomichiException("L'activité n'appartient pas au stage.");
         }
 
@@ -80,7 +80,7 @@ public class Registration {
             throw new StageStatusException("Le stage n'est pas ouvert.");
         }
 
-        if (stage.streamSessions().noneMatch(s -> s.equals(session))) {
+        if (stage.getSessions().stream().noneMatch(s -> s.equals(session))) {
             throw new KinomichiException("La plage n'appartient pas au stage.");
         }
 

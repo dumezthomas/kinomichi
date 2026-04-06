@@ -3,57 +3,62 @@ package be.technifutur.kinomichi.stage;
 import be.technifutur.kinomichi.exception.KinomichiException;
 import be.technifutur.kinomichi.person.Person;
 
-import java.time.DayOfWeek;
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-public class Session {
+import static be.technifutur.kinomichi.util.DateUtil.isTodayOrFuture;
+import static be.technifutur.kinomichi.util.DateUtil.isWeekend;
+
+public class Session implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private final String name;
-    private LocalDateTime startDateTime;
-    private Price price;
-    private Person instructor;
+    private final LocalDateTime startDateTime;
+    private final int duration;
+    private final Price price;
+    private final Person instructor;
 
-    public Session(String name, LocalDateTime startDateTime, Price price, Person instructor) {
+    public Session(String name, LocalDateTime startDateTime, int duration, Price price, Person instructor) {
+        if (!isTodayOrFuture(Objects.requireNonNull(startDateTime))) {
+            throw new KinomichiException("La date entrée est passée.");
+        }
+        if (!isWeekend(startDateTime)) {
+            throw new KinomichiException("La date entrée n'est pas un samedi ou un dimanche.");
+        }
+
+        this.startDateTime = startDateTime;
         this.name = Objects.requireNonNull(name);
-        setStartDateTime(startDateTime);
+        this.duration = (int) Math.round(duration / 15.0) * 15;
         this.price = Objects.requireNonNull(price);
-        setInstructor(instructor);
 
+        if (Objects.requireNonNull(instructor).isInstructor()) {
+            this.instructor = instructor;
+        } else {
+            throw new KinomichiException(instructor.getFullName() + " n'est pas un formateur !");
+        }
     }
 
     public String getName() {
         return name;
     }
 
-    public Price getPrice() {
-        return price;
-    }
-
-    public void setPrice(Price price) {
-        this.price = Objects.requireNonNull(price);
-    }
-
-    private void setStartDateTime(LocalDateTime startDateTime) {
-        Objects.requireNonNull(startDateTime);
-        DayOfWeek day = startDateTime.getDayOfWeek();
-
-        if (day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY) {
-            throw new KinomichiException("Une plage doit être programmée le samedi ou le dimanche");
-        }
-        this.startDateTime = startDateTime;
-    }
-
     public LocalDateTime getStartDateTime() {
         return startDateTime;
     }
 
-    private void setInstructor(Person instructor) {
-        Objects.requireNonNull(instructor);
-        if (instructor.isInstructor()) {
-            this.instructor = instructor;
-        } else {
-            throw new KinomichiException(instructor.getFullName() + " n'est pas un formateur !");
-        }
+    public int getDuration() {
+        return duration;
+    }
+
+    public LocalDateTime getEndDateTime() {
+        return startDateTime.plusMinutes(duration);
+    }
+
+    public Price getPrice() {
+        return price;
     }
 
     public Person getInstructor() {
@@ -65,13 +70,16 @@ public class Session {
         if (o == null || getClass() != o.getClass()) return false;
 
         Session session = (Session) o;
-        return name.equals(session.name) && startDateTime.equals(session.startDateTime);
+        return name.equals(session.name)
+                && startDateTime.equals(session.startDateTime)
+                && duration == session.duration;
     }
 
     @Override
     public int hashCode() {
-        int result = name.hashCode();
-        result = 31 * result + startDateTime.hashCode();
+        int result = Objects.hashCode(name);
+        result = 31 * result + Objects.hashCode(startDateTime);
+        result = 31 * result + Objects.hashCode(duration);
         return result;
     }
 }

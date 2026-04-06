@@ -1,19 +1,18 @@
 package be.technifutur.kinomichi.stage;
 
-import be.technifutur.kinomichi.exception.KinomichiException;
-
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Objects;
 
-public class Activity {
-    private final String name;
-    private LocalDateTime startDateTime;
-    private Price price;
+public class Activity implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
 
-    public Activity(String name, LocalDateTime startDateTime, Price price) {
+    private final String name;
+    private final Price price;
+
+    public Activity(String name, Price price) {
         this.name = Objects.requireNonNull(name);
-        setStartDateTime(startDateTime);
         this.price = Objects.requireNonNull(price);
     }
 
@@ -25,36 +24,16 @@ public class Activity {
         return price;
     }
 
-    public void setPrice(Price price) {
-        this.price = Objects.requireNonNull(price);
-    }
-
-    private void setStartDateTime(LocalDateTime startDateTime) {
-        Objects.requireNonNull(startDateTime);
-        DayOfWeek day = startDateTime.getDayOfWeek();
-
-        if (day != DayOfWeek.SATURDAY) {
-            throw new KinomichiException("Une activité doit être programmée le samedi");
-        }
-        this.startDateTime = startDateTime;
-    }
-
-    public LocalDateTime getStartDateTime() {
-        return startDateTime;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
 
         Activity activity = (Activity) o;
-        return name.equals(activity.name) && startDateTime.equals(activity.startDateTime);
+        return name.equals(activity.name);
     }
 
     @Override
     public int hashCode() {
-        int result = name.hashCode();
-        result = 31 * result + startDateTime.hashCode();
-        return result;
+        return name.hashCode();
     }
 }

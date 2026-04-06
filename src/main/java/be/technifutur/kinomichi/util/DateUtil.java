@@ -38,6 +38,10 @@ public final class DateUtil {
         return date.getDayOfWeek() == DayOfWeek.SUNDAY;
     }
 
+    public static boolean isWeekend(LocalDateTime date) {
+        return isSaturday(date) || isSunday(date);
+    }
+
     public static String format(LocalDate date) {
         return date.format(FORMATTER_DATE);
     }
@@ -56,5 +60,28 @@ public final class DateUtil {
         }
 
         return weekend + " - " + end.format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRENCH));
+    }
+
+    public static String formatDateTime(LocalDateTime start, int duration) {
+        LocalDateTime end = start.plusMinutes(duration);
+
+        DateTimeFormatter dateFormatter =
+                DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.FRENCH);
+
+        DateTimeFormatter timeFormatter =
+                DateTimeFormatter.ofPattern("HH'h'mm", Locale.FRENCH);
+
+        String durationString = String.format("[%02dh%02d]", duration / 60, duration % 60);
+
+        return durationString + " : "
+                + capitalizeDay(start.format(dateFormatter))
+                + ", de "
+                + start.format(timeFormatter)
+                + " à "
+                + end.format(timeFormatter);
+    }
+
+    private static String capitalizeDay(String date) {
+        return date.substring(0, 1).toUpperCase() + date.substring(1);
     }
 }

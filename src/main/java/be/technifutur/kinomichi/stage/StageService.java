@@ -44,8 +44,12 @@ public class StageService {
         return stages.stream().filter(filter).sorted(comparator).toList();
     }
 
-    public boolean isExist(String name) {
-        return stages.stream().anyMatch(stage -> stage.getName().equals(name));
+    public boolean isStagesEmpty() {
+        return stages.isEmpty();
+    }
+
+    public boolean isStageUnique(String name) {
+        return stages.stream().noneMatch(stage -> stage.getName().equals(name));
     }
 
     public void save() {

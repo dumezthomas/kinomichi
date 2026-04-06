@@ -3,7 +3,6 @@ package be.technifutur.kinomichi.menu;
 import be.technifutur.kinomichi.exception.InvalidMenuChoiceException;
 import be.technifutur.kinomichi.stage.Stage;
 import be.technifutur.kinomichi.stage.StageService;
-import be.technifutur.kinomichi.stage.StageStatus;
 import be.technifutur.kinomichi.util.DateUtil;
 
 import java.math.BigDecimal;
@@ -22,7 +21,8 @@ public class MenuPrincipal extends MenuAbstract {
 
     public MenuPrincipal(Scanner scanner, StageService stageService) {
         super(scanner,
-                "Système de gestion des stages KINOMICHI",
+                "Menu Principal",
+                null,
                 "Quitter l'application");
         this.stageService = stageService;
     }
@@ -30,111 +30,124 @@ public class MenuPrincipal extends MenuAbstract {
     @Override
     protected void displayOptions() {
         printMenuSection("Stages");
-        printMenuOption(1, "Afficher les stages");
-        printMenuOption(2, "Afficher un stage");
-        printMenuOption(3, "Créer un stage");
-        printMenuOption(4, "Modifier un stage (DRAFT)");
-        printMenuOption(5, "Supprimer un stage (DRAFT ou CLOSED)");
-        printMenuOption(6, "Ouvrir les réservations (DRAFT)");
-        printMenuOption(7, "Clôturer les réservations (OPEN)");
+        printMenuOption(1, "Afficher les stages", !stageService.isStagesEmpty());
+        printMenuOption(2, "Afficher un stage", !stageService.isStagesEmpty());
+        printMenuOption(3, "Créer un stage", true);
+        printMenuOption(4, "Éditer un stage", !stageService.isStagesEmpty());
 
         printMenuSection("Participants");
-        printMenuOption(8, "Créer un participant/formateur");
+        printMenuOption(5, "Afficher les participants/formateurs", false);
+        printMenuOption(6, "Afficher un participant/formateur", false);
+        printMenuOption(7, "Ajouter un participant/formateur", false);
+        printMenuOption(9, "Éditer un participant/formateur", false);
+
+        printMenuSection("Réservations");
+        printMenuOption(10, "Afficher les réservations", false);
+        printMenuOption(11, "Afficher une réservation", false);
+        printMenuOption(12, "Prendre une réservation", false);
+        printMenuOption(13, "Modifier une réservation", false);
     }
 
     @Override
-    protected void executeChoice(int choice) {
+    protected boolean executeChoice(int choice) {
         switch (choice) {
             case 1 -> {
-                printMenuChoice(1, "Afficher les stages");
-                displayStages(stageService.getStagesSorted(Comparator.comparing(Stage::getStartDate)));
+                if (!stageService.isStagesEmpty()) {
+                    printMenuChoice(1, "Afficher les stages");
+                    displayStages(stageService.getStagesSorted(Comparator.comparing(Stage::getStartDate)));
+                } else {
+                    printWarning("Option indisponible: Aucun stage à afficher.");
+                }
             }
 
             case 2 -> {
-                printMenuChoice(2, "Afficher un stage");
-                Stage stage = selectStage(
-                        Comparator.comparing(Stage::getStartDate),
-                        null);
-                if (stage != null) {
-                    System.out.println(stage);
+                if (!stageService.isStagesEmpty()) {
+                    printMenuChoice(2, "Afficher un stage");
+                    Stage stage = selectStage(
+                            Comparator.comparing(Stage::getStartDate),
+                            null);
+                    if (stage != null) {
+                        System.out.println();
+                        System.out.println(stage);
+                    }
+                } else {
+                    printWarning("Option indisponible: Aucun stage à afficher.");
                 }
             }
 
             case 3 -> {
                 printMenuChoice(3, "Créer un stage");
-                addStage();
+                Stage stage = addStage();
+                if (stage != null) {
+                    MenuStage menu = new MenuStage(getScanner(), stageService, stage);
+                    menu.show();
+                }
             }
 
             case 4 -> {
-                printMenuChoice(4, "Modifier un stage (DRAFT)");
-                Stage stage = selectStage(
-                        Comparator.comparing(Stage::getStartDate),
-                        Stage::isDraft);
-                if (stage != null) {
-                    System.out.println(stage);
+                if (!stageService.isStagesEmpty()) {
+                    printMenuChoice(4, "Éditer un stage");
+                    Stage stage = selectStage(
+                            Comparator.comparing(Stage::getStartDate),
+                            null);
+                    if (stage != null) {
+                        MenuStage menu = new MenuStage(getScanner(), stageService, stage);
+                        menu.show();
+                    }
+                } else {
+                    printWarning("Option indisponible: Aucun stage à éditer.");
                 }
             }
 
             case 5 -> {
-                printMenuChoice(5, "Supprimer un stage (DRAFT ou CLOSED)");
-                Stage stage = selectStage(
-                        Comparator.comparing(Stage::getStartDate),
-                        s -> !s.isOpen());
-                if (stage != null) {
-                    System.out.println();
-                    if (stageService.remove(stage)) {
-                        printSuccess("Le stage '" + stage.getName() + "' a été supprimé !");
-                    } else {
-                        printError("Erreur lors de la suppression du stage '" + stage.getName() + "' !");
-                    }
-                }
+                printWarning("Option indisponible: Pas encore implémenté.");
             }
 
             case 6 -> {
-                printMenuChoice(6, "Ouvrir les réservations (DRAFT)");
-                Stage stage = selectStage(
-                        Comparator.comparing(Stage::getStartDate),
-                        Stage::isDraft);
-                if (stage != null) {
-                    stage.open();
-
-                    System.out.println();
-                    if (stage.getStatus() == StageStatus.OPEN) {
-                        printSuccess("Les réservations ont été ouvertes !");
-                        stageService.save();
-                    } else {
-                        printError("Erreur lors de l'ouverture des réservations !");
-                    }
-                }
+                printWarning("Option indisponible: Pas encore implémenté.");
             }
 
             case 7 -> {
-                printMenuChoice(7, "Clôturer les réservations (OPEN)");
-                Stage stage = selectStage(
-                        Comparator.comparing(Stage::getStartDate),
-                        Stage::isOpen);
-                if (stage != null) {
-                    stage.close();
+                printWarning("Option indisponible: Pas encore implémenté.");
+            }
 
-                    System.out.println();
-                    if (stage.getStatus() == StageStatus.CLOSED) {
-                        printSuccess("Les réservations ont été clôturées !");
-                        stageService.save();
-                    } else {
-                        printError("Erreur lors de la clôture des réservations !");
-                    }
-                }
+            case 8 -> {
+                printWarning("Option indisponible: Pas encore implémenté.");
+            }
+
+            case 9 -> {
+                printWarning("Option indisponible: Pas encore implémenté.");
+            }
+
+            case 10 -> {
+                printWarning("Option indisponible: Pas encore implémenté.");
+            }
+
+            case 11 -> {
+                printWarning("Option indisponible: Pas encore implémenté.");
+            }
+
+            case 12 -> {
+                printWarning("Option indisponible: Pas encore implémenté.");
+            }
+
+            case 13 -> {
+                printWarning("Option indisponible: Pas encore implémenté.");
             }
 
             case 0 -> {
+                printMenuChoice(0, "Quitter l'application");
                 System.out.println("Au revoir !");
+                return false;
             }
         }
+
+        return true;
     }
 
     @Override
     protected boolean isValidChoice(int choice) {
-        return choice >= 0 && choice <= 7;
+        return choice >= 0 && choice <= 13;
     }
 
     private void displayStages(List<Stage> stages) {
@@ -143,17 +156,19 @@ public class MenuPrincipal extends MenuAbstract {
             return;
         }
 
-        System.out.printf("%-3s %-25s %-10s %-15s%n", "#", "Nom du stage", "Statut", "Date de début");
-        System.out.println("--------------------------------------------------------------");
+        System.out.printf("%-3s %-25s %-10s %-12s %-12s %-35s%n", "#", "Stage", "Statut", "Sessions", "Activités", "Dates");
+        System.out.println("-------------------------------------------------------------------------------------------------------------");
 
         for (int i = 0; i < stages.size(); i++) {
             Stage stage = stages.get(i);
 
-            System.out.printf("%-3s %-25s %-10s %-15s%n",
+            System.out.printf("%-3s %-25s %-10s %-12s %-12s %-35s%n",
                     BOLD + (i + 1) + RESET + ". ",
                     stage.getName(),
                     stage.getStatus(),
-                    DateUtil.format(stage.getStartDate()));
+                    stage.getSessions().size(),
+                    stage.getActivities().size(),
+                    DateUtil.formatWeekend(stage.getStartDate()));
         }
     }
 
@@ -195,23 +210,23 @@ public class MenuPrincipal extends MenuAbstract {
         }
     }
 
-    private void addStage() {
+    private Stage addStage() {
         String name = askName();
 
         System.out.print("Courte description du stage : ");
         String shortDescription = getScanner().nextLine();
 
         LocalDate startDate = askStartDate();
-
         BigDecimal cappedPrice = askCappedPrice();
-
         Stage stage = new Stage(name, shortDescription, startDate, cappedPrice);
 
         System.out.println();
         if (stageService.add(stage)) {
             printSuccess("Le stage '" + stage.getName() + "' a été ajouté !");
+            return stage;
         } else {
             printError("Erreur lors de l'ajout du stage '" + stage.getName() + "' !");
+            return null;
         }
     }
 
@@ -222,10 +237,10 @@ public class MenuPrincipal extends MenuAbstract {
 
             if (name.isEmpty()) {
                 printWarning("Le nom du stage ne peut pas être vide.");
-            } else if (stageService.isExist(name)) {
-                printWarning("Le stage '" + name + "' existe déjà !");
-            } else {
+            } else if (stageService.isStageUnique(name)) {
                 return name;
+            } else {
+                printWarning("Le stage '" + name + "' existe déjà !");
             }
         }
     }

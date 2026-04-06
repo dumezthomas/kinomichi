@@ -9,29 +9,31 @@ import static be.technifutur.kinomichi.util.ConsoleUtil.*;
 
 public abstract class MenuAbstract {
     private final Scanner scanner;
-    private final String menuTitle;
-    private final String quitMessage;
+    private final String title;
+    private final String subtitle;
+    private final String backOrQuit;
 
-    public MenuAbstract(Scanner scanner, String menuTitle, String quitMessage) {
+    public MenuAbstract(Scanner scanner, String title, String subtitle, String backOrQuit) {
         this.scanner = scanner;
-        this.menuTitle = menuTitle;
-        this.quitMessage = quitMessage;
+        this.title = title;
+        this.subtitle = subtitle;
+        this.backOrQuit = backOrQuit;
     }
 
     public void show() {
-        int choice;
+        boolean stayInMenu;
 
         do {
             displayMenu();
             printMenuPrompt();
-            choice = readChoice();
+            int choice = readChoice();
 
-            executeChoice(choice);
-            if (choice != 0) {
+            stayInMenu = executeChoice(choice);
+            if (stayInMenu) {
                 printPause(scanner);
             }
 
-        } while (choice != 0);
+        } while (stayInMenu);
     }
 
     private int readChoice() {
@@ -55,9 +57,9 @@ public abstract class MenuAbstract {
     }
 
     private void displayMenu() {
-        printMenuTitle(menuTitle);
+        printMenuTitle(title, subtitle);
         displayOptions();
-        printMenuExit(quitMessage);
+        printMenuExit(backOrQuit);
     }
 
     protected Scanner getScanner() {
@@ -66,7 +68,7 @@ public abstract class MenuAbstract {
 
     protected abstract void displayOptions();
 
-    protected abstract void executeChoice(int choice);
+    protected abstract boolean executeChoice(int choice);
 
     protected abstract boolean isValidChoice(int choice);
 }
