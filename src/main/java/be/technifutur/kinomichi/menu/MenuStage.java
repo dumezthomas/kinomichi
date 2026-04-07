@@ -44,7 +44,7 @@ public class MenuStage extends MenuAbstract {
 
         printMenuSection("Réservations");
         printMenuOption(7, "Ouvrir les réservations", stage.isDraft()
-                && !stage.isSessionsEmpty() && !stage.isActivitiesEmpty());
+                && (!stage.isSessionsEmpty() || !stage.isActivitiesEmpty()));
         printMenuOption(8, "Clôturer les réservations", stage.isOpen());
 
         printMenuSection("Suppression");
@@ -133,7 +133,7 @@ public class MenuStage extends MenuAbstract {
             }
 
             case 7 -> {
-                if (stage.isDraft() && !stage.isSessionsEmpty() && !stage.isActivitiesEmpty()) {
+                if (stage.isDraft() && (!stage.isSessionsEmpty() || !stage.isActivitiesEmpty())) {
                     printMenuChoice(7, "Ouvrir les réservations");
                     stage.open();
 
@@ -143,7 +143,7 @@ public class MenuStage extends MenuAbstract {
                     } else {
                         printError("Erreur lors de l'ouverture des réservations !");
                     }
-                } else if (!stage.isSessionsEmpty() && !stage.isActivitiesEmpty()) {
+                } else if (!stage.isSessionsEmpty() || !stage.isActivitiesEmpty()) {
                     printWarning("Option indisponible: Le stage n'est pas en mode DRAFT.");
                 } else {
                     printWarning("Option indisponible: Le stage n'a aucune session et/ou activité.");

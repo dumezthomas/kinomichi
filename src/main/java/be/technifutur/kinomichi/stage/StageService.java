@@ -2,6 +2,7 @@ package be.technifutur.kinomichi.stage;
 
 import be.technifutur.kinomichi.io.DataManager;
 
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
@@ -44,12 +45,21 @@ public class StageService {
         return stages.stream().filter(filter).sorted(comparator).toList();
     }
 
+    public List<Stage> getStagesFiltered(Predicate<Stage> filter) {
+        return stages.stream().filter(filter).toList();
+    }
+
     public boolean isStagesEmpty() {
         return stages.isEmpty();
     }
 
     public boolean isStageUnique(String name) {
         return stages.stream().noneMatch(stage -> stage.getName().equals(name));
+    }
+
+    public boolean existsStageAtSameWeekend(LocalDate startDate) {
+        return stages.stream()
+                .anyMatch(s -> s.getStartDate().equals(startDate));
     }
 
     public void save() {

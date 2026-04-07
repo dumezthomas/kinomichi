@@ -3,6 +3,7 @@ package be.technifutur.kinomichi.menu;
 import be.technifutur.kinomichi.person.Person;
 import be.technifutur.kinomichi.person.PersonService;
 
+import java.time.LocalDate;
 import java.util.Scanner;
 
 import static be.technifutur.kinomichi.util.ConsoleUtil.*;
@@ -28,11 +29,10 @@ public class MenuPerson extends MenuAbstract {
         printMenuOption(3, "Éditer le numéro de téléphone", true);
         printMenuOption(4, "Éditer le club de Kinomichi", true);
         printMenuOption(5, "Classifier '" + person.getFullName() + "' comme formateur",
-                !person.isInstructor() && !person.isChild());
+                !person.isInstructor() && !person.isChild(LocalDate.now()));
 
         printMenuSection("Suppression");
         printMenuOption(6, "Supprimer '" + person.getFullName() + "'", true);
-
     }
 
     @Override
@@ -74,12 +74,12 @@ public class MenuPerson extends MenuAbstract {
             }
 
             case 5 -> {
-                if (!person.isInstructor() && !person.isChild()) {
+                if (!person.isInstructor() && !person.isChild(LocalDate.now())) {
                     printMenuChoice(5, "Classifier comme formateur");
                     person.becameInstructor();
                     printSuccess("'" + person.getFullName() + "' est maintenant formateur !");
                     personService.save();
-                } else if (!person.isChild()) {
+                } else if (!person.isChild(LocalDate.now())) {
                     printWarning("Option indisponible: '" + person.getFullName() + "' est déjà formateur.");
                 } else {
                     printWarning("Option indisponible: '" + person.getFullName() + "' n'est pas en âge de devenir formateur.");

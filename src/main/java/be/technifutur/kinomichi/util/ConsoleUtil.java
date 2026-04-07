@@ -14,7 +14,7 @@ public class ConsoleUtil {
 
     public static final String BOLD = "\u001B[1m";
 
-    private static final int NB_DASH = 50;
+    private static final int NB_DASH = 75;
 
     private static void printMenuDashLine() {
         System.out.println("+" + "-".repeat(NB_DASH) + "+");
@@ -38,10 +38,15 @@ public class ConsoleUtil {
     }
 
     public static void printMenuOption(int option, String label, boolean enabled) {
+        String optionString = "";
+        if (option < 10) {
+            optionString = " ";
+        }
+
         if (enabled) {
-            System.out.printf(BOLD + "  %d" + RESET + ". %s%n", option, label);
+            System.out.printf(BOLD + optionString + " %d" + RESET + ". %s%n", option, label);
         } else {
-            System.out.printf(GRAY + BOLD + "  %d" + RESET + GRAY + ". %s%n" + RESET, option, label);
+            System.out.printf(GRAY + BOLD + optionString + " %d" + RESET + GRAY + ". %s%n" + RESET, option, label);
         }
     }
 
@@ -58,9 +63,14 @@ public class ConsoleUtil {
     }
 
     public static void printMenuChoice(int option, String label) {
+        String optionString = "";
+        if (option < 10) {
+            optionString = " ";
+        }
+
         System.out.println();
         printMenuDashLine();
-        System.out.printf(BOLD + "  %d" + RESET + ". %s%n", option, label);
+        System.out.printf(BOLD + optionString + " %d" + RESET + ". %s%n", option, label);
         printMenuDashLine();
         System.out.println();
     }

@@ -27,7 +27,7 @@ public class Stage implements Serializable {
     private final List<Session> sessions = new ArrayList<>();
     private final List<Activity> activities = new ArrayList<>();
     private BigDecimal cappedPrice;
-    private StageStatus status;
+    private StageStatus status = StageStatus.DRAFT;
 
     public Stage(String name, String shortDescription, LocalDate startDate, BigDecimal cappedPrice) {
         if (!isTodayOrFuture(Objects.requireNonNull(startDate))) {
@@ -46,8 +46,6 @@ public class Stage implements Serializable {
         } else {
             this.cappedPrice = BigDecimal.ZERO;
         }
-
-        this.status = StageStatus.DRAFT;
     }
 
     public boolean isOpen() {
@@ -171,7 +169,7 @@ public class Stage implements Serializable {
 
     private void checkDraft() {
         if (!isDraft()) {
-            throw new StageStatusException("Le stage n'est pas en mode DRAFT mais " + status.toString() + ".");
+            throw new StageStatusException("Le stage n'est pas en mode DRAFT mais " + status + ".");
         }
     }
 

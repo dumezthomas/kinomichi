@@ -18,7 +18,7 @@ public class DataManager {
     }
 
     public <T> void save(List<T> data, String fileName) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(fileName))) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(basePath + fileName))) {
             oos.writeObject(data);
         } catch (IOException e) {
             printError("Erreur lors de la sauvegarde !");
@@ -27,7 +27,7 @@ public class DataManager {
 
     @SuppressWarnings("unchecked")
     public <T> List<T> load(String fileName) {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(fileName))) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(basePath + fileName))) {
             return (List<T>) ois.readObject();
         } catch (Exception e) {
             return new ArrayList<>();

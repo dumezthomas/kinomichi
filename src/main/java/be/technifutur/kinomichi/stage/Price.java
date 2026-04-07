@@ -5,6 +5,7 @@ import be.technifutur.kinomichi.person.Person;
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Objects;
 
 public record Price(BigDecimal adult, BigDecimal child, BigDecimal instructor) implements Serializable {
@@ -23,12 +24,12 @@ public record Price(BigDecimal adult, BigDecimal child, BigDecimal instructor) i
         }
     }
 
-    public BigDecimal forPerson(Person person) {
+    public BigDecimal forPerson(Person person, LocalDate eventDate) {
         if (person != null) {
             if (person.isInstructor()) {
                 return instructor;
             }
-            if (person.isChild()) {
+            if (person.isChild(eventDate)) {
                 return child;
             }
         }

@@ -37,23 +37,23 @@ public class Person implements Serializable {
         this.phoneNumber = phoneNumber;
         this.club = club;
 
-        if (instructor && isChild()) {
+        if (instructor && isChild(LocalDate.now())) {
             throw new KinomichiException("Un enfant ne peut pas être formateur !");
         } else {
             this.instructor = instructor;
         }
     }
 
-    public int getAge() {
+    public int getAge(LocalDate eventDate) {
         try {
-            return Period.between(dateOfBirth, LocalDate.now()).getYears();
+            return Period.between(dateOfBirth, eventDate).getYears();
         } catch (Exception e) {
             throw new RuntimeException(e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
-    public boolean isChild() {
-        return getAge() < 18;
+    public boolean isChild(LocalDate eventDate) {
+        return getAge(eventDate) < 18;
     }
 
     public String getFullName() {
@@ -88,7 +88,7 @@ public class Person implements Serializable {
     public String toString() {
         String instructor = isInstructor() ? (YELLOW + " [ Formateur ]" + RESET) : "";
         return BOLD + getFullName() + RESET + instructor + "\n" +
-                "  |  Age : " + getAge() + " (" + DateUtil.format(dateOfBirth) + ")\n" +
+                "  |  Age : " + getAge(LocalDate.now()) + " (" + DateUtil.format(dateOfBirth) + ")\n" +
                 "  |  E-mail : " + email + "\n" +
                 "  |  Téléphone : " + phoneNumber + "\n" +
                 "  |  Club : " + club + "\n";

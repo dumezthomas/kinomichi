@@ -4,6 +4,8 @@ import be.technifutur.kinomichi.exception.InvalidMenuChoiceException;
 import be.technifutur.kinomichi.exception.KinomichiException;
 import be.technifutur.kinomichi.person.Person;
 import be.technifutur.kinomichi.person.PersonService;
+import be.technifutur.kinomichi.registration.Registration;
+import be.technifutur.kinomichi.registration.RegistrationService;
 import be.technifutur.kinomichi.stage.Stage;
 import be.technifutur.kinomichi.stage.StageService;
 import be.technifutur.kinomichi.util.DateUtil;
@@ -23,14 +25,16 @@ import static be.technifutur.kinomichi.util.ConsoleUtil.*;
 public class MenuPrincipal extends MenuAbstract {
     private final StageService stageService;
     private final PersonService personService;
+    private final RegistrationService registrationService;
 
-    public MenuPrincipal(Scanner scanner, StageService stageService, PersonService personService) {
+    public MenuPrincipal(Scanner scanner, StageService stageService, PersonService personService, RegistrationService registrationService) {
         super(scanner,
                 "Menu Principal",
                 null,
                 "Quitter l'application");
         this.stageService = stageService;
         this.personService = personService;
+        this.registrationService = registrationService;
     }
 
     @Override
@@ -48,10 +52,13 @@ public class MenuPrincipal extends MenuAbstract {
         printMenuOption(8, "Éditer un participant", !personService.isPeopleEmpty());
 
         printMenuSection("Réservations");
-        printMenuOption(9, "Afficher les réservations pour un stage", false);
-        printMenuOption(10, "Afficher les réservation pour un participant", false);
-        printMenuOption(11, "Prendre une réservation", false);
-        printMenuOption(12, "Modifier une réservation", false);
+        printMenuOption(9, "Afficher les réservations pour un stage",
+                !stageService.getStagesFiltered(s -> !s.isDraft()).isEmpty());
+        printMenuOption(10, "Afficher les réservations pour un participant", !personService.isPeopleEmpty());
+        printMenuOption(11, "Afficher une réservations", !registrationService.isRegistrationsEmpty());
+        printMenuOption(12, "Prendre une réservation",
+                !personService.isPeopleEmpty() && !stageService.getStagesFiltered(Stage::isOpen).isEmpty());
+        printMenuOption(13, "Modifier une réservation", !registrationService.isRegistrationsEmpty());
     }
 
     @Override
@@ -155,19 +162,96 @@ public class MenuPrincipal extends MenuAbstract {
                 }
 
                 case 9 -> {
-                    printWarning("Option indisponible: Pas encore implémenté.");
+                    if (!stageService.getStagesFiltered(s -> !s.isDraft()).isEmpty()) {
+                        printMenuChoice(9, "Afficher les réservations pour un stage");
+                        Stage stage = selectStage(
+                                Comparator.comparing(Stage::getStartDate),
+                                s -> !s.isDraft());
+                        if (stage != null) {
+                            System.out.println();
+                            displayRegistrations(registrationService.getRegistrationsSortedAndFiltered(
+                                    Comparator.comparing(Registration::getName),
+                                    r -> r.getStage().equals(stage)));
+                        }
+                    } else {
+                        printWarning("Option indisponible: Aucun stage en mode OPEN ou CLOSED disponible.");
+                    }
                 }
 
                 case 10 -> {
-                    printWarning("Option indisponible: Pas encore implémenté.");
+                    if (!personService.isPeopleEmpty()) {
+                        printMenuChoice(10, "Afficher les réservations pour un participant");
+                        Person person = selectPerson(
+                                Comparator.comparing(Person::getFullName),
+                                null);
+                        if (person != null) {
+                            System.out.println();
+                            displayRegistrations(registrationService.getRegistrationsSortedAndFiltered(
+                                    Comparator.comparing(r -> r.getStage().getName()),
+                                    r -> r.getPerson().equals(person)));
+                        }
+                    } else {
+                        printWarning("Option indisponible: Aucun participant disponible.");
+                    }
                 }
 
                 case 11 -> {
-                    printWarning("Option indisponible: Pas encore implémenté.");
+                    if (!registrationService.isRegistrationsEmpty()) {
+                        printMenuChoice(6, "Afficher une réservations");
+                        Person person = selectPerson(
+                                Comparator.comparing(Person::getFullName),
+                                null);
+                        if (person != null) {
+                            System.out.println();
+                            Registration registration = selectRegistration(
+                                    Comparator.comparing(r -> r.getStage().getName()),
+                                    r -> r.getPerson().equals(person));
+
+                            if (registration != null) {
+                                System.out.println();
+                                System.out.print(registration);
+                            }
+                        }
+                    } else {
+                        printWarning("Option indisponible: Aucune réservation à afficher.");
+                    }
                 }
 
                 case 12 -> {
-                    printWarning("Option indisponible: Pas encore implémenté.");
+                    if (!personService.isPeopleEmpty() && !stageService.getStagesFiltered(Stage::isOpen).isEmpty()) {
+                        printMenuChoice(12, "Prendre une réservation");
+                        Registration registration = addRegistration();
+                        if (registration != null) {
+                            MenuRegistration menu = new MenuRegistration(getScanner(), registrationService, registration);
+                            menu.show();
+                        }
+                    } else if (!stageService.getStagesFiltered(Stage::isOpen).isEmpty()) {
+                        printWarning("Option indisponible: Aucun participant.");
+                    } else {
+                        printWarning("Option indisponible: Aucun stage en mode OPEN.");
+                    }
+                }
+
+                case 13 -> {
+                    if (!registrationService.isRegistrationsEmpty()) {
+                        printMenuChoice(13, "Modifier une réservation");
+                        Person person = selectPerson(
+                                Comparator.comparing(Person::getFullName),
+                                null);
+                        if (person != null) {
+                            System.out.println();
+                            Registration registration = selectRegistration(
+                                    Comparator.comparing(r -> r.getStage().getName()),
+                                    r -> r.getPerson().equals(person));
+
+                            if (registration != null) {
+                                MenuRegistration menu = new MenuRegistration(getScanner(), registrationService, registration);
+                                menu.show();
+                            }
+                        }
+                    } else {
+                        printWarning("Option indisponible: Aucune réservation à modifier.");
+                    }
                 }
 
                 case 0 -> {
@@ -186,7 +270,7 @@ public class MenuPrincipal extends MenuAbstract {
 
     @Override
     protected boolean isValidChoice(int choice) {
-        return choice >= 0 && choice <= 12;
+        return choice >= 0 && choice <= 13;
     }
 
     private void displayStages(List<Stage> stages) {
@@ -227,9 +311,32 @@ public class MenuPrincipal extends MenuAbstract {
                     BOLD + (i + 1) + RESET + ". ",
                     person.getFullName(),
                     DateUtil.format(person.getDateOfBirth()),
-                    person.isChild() ? "" : "V",
-                    person.isChild() ? "V" : "",
+                    person.isChild(LocalDate.now()) ? "" : "V",
+                    person.isChild(LocalDate.now()) ? "V" : "",
                     person.isInstructor() ? "V" : "");
+        }
+    }
+
+    private void displayRegistrations(List<Registration> registrations) {
+        if (registrations.isEmpty()) {
+            printWarning("Aucune réservation.");
+            return;
+        }
+
+        System.out.printf("%-3s %-25s %-25s %-12s %-12s %-8s%n",
+                "#", "Participant", "Stage", "Sessions", "Activités", "Payé ?");
+        System.out.println("-----------------------------------------------------------------------------------------------------------");
+
+        for (int i = 0; i < registrations.size(); i++) {
+            Registration registration = registrations.get(i);
+
+            System.out.printf("%-3s %-25s %-25s %-12s %-12s %-8s%n",
+                    BOLD + (i + 1) + RESET + ". ",
+                    registration.getPerson().getFullName(),
+                    registration.getStage().getName(),
+                    registration.getSessions().size(),
+                    registration.getActivities().size(),
+                    registration.isPaid() ? "V" : "");
         }
     }
 
@@ -309,6 +416,44 @@ public class MenuPrincipal extends MenuAbstract {
         }
     }
 
+    public Registration selectRegistration(Comparator<Registration> comparator, Predicate<Registration> filter) {
+        List<Registration> registrations = filter == null ?
+                registrationService.getRegistrationsSorted(comparator) :
+                registrationService.getRegistrationsSortedAndFiltered(comparator, filter);
+
+        if (registrations.isEmpty()) {
+            printWarning("Aucune réservation disponible.");
+            return null;
+        }
+
+        displayRegistrations(registrations);
+        System.out.printf("%-3s %-25s%n", BOLD + "0" + RESET + ". ", "Retour");
+        System.out.println();
+        System.out.print(CYAN + "Choisissez une réservation (numéro) : " + RESET);
+
+        while (true) {
+            try {
+                int choice = getScanner().nextInt();
+                getScanner().nextLine();
+
+                if (choice < 0 || choice > registrations.size()) {
+                    throw new InvalidMenuChoiceException(String.valueOf(choice));
+                }
+
+                if (choice == 0) {
+                    return null;
+                } else {
+                    return registrations.get(choice - 1);
+                }
+            } catch (InvalidMenuChoiceException e) {
+                printError("Choix invalide !");
+            } catch (InputMismatchException e) {
+                printError("Veuillez entrer un nombre !");
+                getScanner().nextLine();
+            }
+        }
+    }
+
     private Stage addStage() {
         String name = askStageName();
 
@@ -354,6 +499,30 @@ public class MenuPrincipal extends MenuAbstract {
             return person;
         } else {
             printError("Ce " + instructorString + " '" + person.getFullName() + "' existe déjà !");
+            return null;
+        }
+    }
+
+    private Registration addRegistration() {
+        Person person = selectPerson(Comparator.comparing(Person::getFullName), null);
+        if (person == null) {
+            return null;
+        }
+
+        System.out.println();
+        Stage stage = selectStage(Comparator.comparing(Stage::getStartDate), Stage::isOpen);
+        if (stage == null) {
+            return null;
+        }
+
+        Registration registration = new Registration(person, stage);
+
+        System.out.println();
+        if (registrationService.add(registration)) {
+            printSuccess("La réservation '" + registration.getName() + "' a été ajoutée !");
+            return registration;
+        } else {
+            printError("La réservation '" + registration.getName() + "' existe déjà !");
             return null;
         }
     }
@@ -411,6 +580,8 @@ public class MenuPrincipal extends MenuAbstract {
                     printWarning("La date entrée est passée.");
                 } else if (!DateUtil.isSaturday(date)) {
                     printWarning("La date entrée n'est pas un samedi.");
+                } else if (stageService.existsStageAtSameWeekend(date)) {
+                    printWarning("Un stage est déjà prévu ce week-end.");
                 } else {
                     return date;
                 }
@@ -478,6 +649,4 @@ public class MenuPrincipal extends MenuAbstract {
             }
         }
     }
-
-
 }

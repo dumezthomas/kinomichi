@@ -3,6 +3,7 @@ package be.technifutur.kinomichi.app;
 import be.technifutur.kinomichi.io.DataManager;
 import be.technifutur.kinomichi.menu.MenuPrincipal;
 import be.technifutur.kinomichi.person.PersonService;
+import be.technifutur.kinomichi.registration.RegistrationService;
 import be.technifutur.kinomichi.stage.StageService;
 
 import java.util.Scanner;
@@ -13,9 +14,10 @@ public class Main {
 
         StageService stageService = new StageService(dataManager);
         PersonService personService = new PersonService(dataManager);
+        RegistrationService registrationService = new RegistrationService(dataManager);
 
         Scanner scanner = new Scanner(System.in);
-        MenuPrincipal menu = new MenuPrincipal(scanner, stageService, personService);
+        MenuPrincipal menu = new MenuPrincipal(scanner, stageService, personService, registrationService);
         menu.show();
     }
 }

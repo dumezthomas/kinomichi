@@ -7,110 +7,81 @@ import be.technifutur.kinomichi.stage.Activity;
 import be.technifutur.kinomichi.stage.Session;
 import be.technifutur.kinomichi.stage.Stage;
 
+import java.io.Serial;
+import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
-public class Registration {
+public class Registration implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private final Person person;
     private final Stage stage;
-    private List<Session> sessions;
-    private List<Activity> activities;
+    private final List<Session> sessions = new ArrayList<>();
+    private final List<Activity> activities = new ArrayList<>();
+    private final LocalDateTime createdAt = LocalDateTime.now();
+    private boolean paid = false;
 
-    public Registration(List<Activity> activities, Person person, List<Session> sessions, Stage stage) {
-        this.stage = Objects.requireNonNull(stage);
-        if (!stage.isOpen()) {
-            throw new StageStatusException("Le stage n'est pas ouvert.");
-        }
-
-        this.activities = activities;
+    public Registration(Person person, Stage stage) {
         this.person = Objects.requireNonNull(person);
-        this.sessions = sessions;
-    }
-
-    public boolean isEligibleToDiscount() {
-        if (sessions == null || sessions.isEmpty()) {
-            return false;
-        }
-
-        return sessions.containsAll(stage.getSessions());
+        this.stage = Objects.requireNonNull(stage);
+        checkStageOpen();
     }
 
     public void addActivity(Activity activity) {
-        Objects.requireNonNull(activity);
+        checkStageOpen();
 
-        if (!stage.isOpen()) {
-            throw new StageStatusException("Le stage n'est pas ouvert.");
-        }
-
-        if (stage.getActivities().stream().noneMatch(a -> a.equals(activity))) {
-            throw new KinomichiException("L'activité n'appartient pas au stage.");
-        }
-
-        if (this.activities == null) {
-            this.activities = new ArrayList<>();
+        if (!stage.getActivities().contains(activity)) {
+            throw new KinomichiException("L'activité n'appartient pas au stage choisi.");
         }
 
         if (activities.contains(activity)) {
-            throw new KinomichiException("Activité déjà ajoutée.");
+            throw new KinomichiException("Activité déjà réservée.");
         }
 
-        activities.add(activity);
+        this.activities.add(activity);
+        this.activities.sort(Comparator.comparing(Activity::getName));
     }
 
     public void removeActivity(Activity activity) {
-        if (!stage.isOpen()) {
-            throw new StageStatusException("Le stage n'est pas ouvert.");
-        }
-
-        if (this.activities != null) {
-            this.activities.remove(activity);
-        }
+        checkStageOpen();
+        this.activities.remove(activity);
     }
 
-    public Stream<Activity> streamActivities() {
-        return activities.stream();
+    public List<Activity> getActivities() {
+        return activities;
     }
 
     public void addSession(Session session) {
-        Objects.requireNonNull(session);
+        checkStageOpen();
 
-        if (!stage.isOpen()) {
-            throw new StageStatusException("Le stage n'est pas ouvert.");
+        if (!stage.getSessions().contains(session)) {
+            throw new KinomichiException("La session n'appartient pas au stage choisi.");
         }
 
-        if (stage.getSessions().stream().noneMatch(s -> s.equals(session))) {
-            throw new KinomichiException("La plage n'appartient pas au stage.");
-        }
-
-        if (session.getInstructor() != null && session.getInstructor().equals(person)) {
-            throw new KinomichiException("Participant enregistré comme formateur pour cette session.");
-        }
-
-        if (this.sessions == null) {
-            this.sessions = new ArrayList<>();
+        if (session.getInstructor().equals(person)) {
+            throw new KinomichiException("Le participant est enregistré comme formateur pour cette session.");
         }
 
         if (sessions.contains(session)) {
-            throw new KinomichiException("Plage déjà ajoutée.");
+            throw new KinomichiException("Session déjà réservée.");
         }
 
-        sessions.add(session);
+        this.sessions.add(session);
+        this.sessions.sort(Comparator.comparing(Session::getStartDateTime));
     }
 
     public void removeSession(Session session) {
-        if (!stage.isOpen()) {
-            throw new StageStatusException("Le stage n'est pas ouvert.");
-        }
-
-        if (this.sessions != null) {
-            this.sessions.remove(session);
-        }
+        checkStageOpen();
+        this.sessions.remove(session);
     }
 
-    public Stream<Session> streamSessions() {
-        return sessions.stream();
+    public List<Session> getSessions() {
+        return sessions;
     }
 
     public Person getPerson() {
@@ -119,5 +90,42 @@ public class Registration {
 
     public Stage getStage() {
         return stage;
+    }
+
+    public String getName() {
+        return person.getFullName() + " - " + stage.getName();
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public boolean isPaid() {
+        return paid;
+    }
+
+    public void setPaid(boolean paid) {
+        this.paid = paid;
+    }
+
+    private void checkStageOpen() {
+        if (!stage.isOpen()) {
+            throw new StageStatusException("Le stage n'est pas en mode OPEN mais " + stage.getStatus() + ".");
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Registration that = (Registration) o;
+        return person.equals(that.person) && stage.equals(that.stage);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = person.hashCode();
+        result = 31 * result + stage.hashCode();
+        return result;
     }
 }
