@@ -6,14 +6,20 @@ import be.technifutur.kinomichi.person.Person;
 import be.technifutur.kinomichi.stage.Activity;
 import be.technifutur.kinomichi.stage.Session;
 import be.technifutur.kinomichi.stage.Stage;
+import be.technifutur.kinomichi.util.DateUtil;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+
+import static be.technifutur.kinomichi.util.ConsoleUtil.BOLD;
+import static be.technifutur.kinomichi.util.ConsoleUtil.RESET;
+import static be.technifutur.kinomichi.util.DateUtil.format;
+import static be.technifutur.kinomichi.util.DateUtil.formatWeekend;
 
 public class Registration implements Serializable {
     @Serial
@@ -23,8 +29,7 @@ public class Registration implements Serializable {
     private final Stage stage;
     private final List<Session> sessions = new ArrayList<>();
     private final List<Activity> activities = new ArrayList<>();
-    private final LocalDateTime createdAt = LocalDateTime.now();
-    private boolean paid = false;
+    private final LocalDate createdAt = LocalDate.now();
 
     public Registration(Person person, Stage stage) {
         this.person = Objects.requireNonNull(person);
@@ -32,7 +37,7 @@ public class Registration implements Serializable {
         checkStageOpen();
     }
 
-    public void addActivity(Activity activity) {
+    public void registerActivity(Activity activity) {
         checkStageOpen();
 
         if (!stage.getActivities().contains(activity)) {
@@ -47,7 +52,7 @@ public class Registration implements Serializable {
         this.activities.sort(Comparator.comparing(Activity::getName));
     }
 
-    public void removeActivity(Activity activity) {
+    public void unregisterActivity(Activity activity) {
         checkStageOpen();
         this.activities.remove(activity);
     }
@@ -56,7 +61,13 @@ public class Registration implements Serializable {
         return activities;
     }
 
-    public void addSession(Session session) {
+    public List<Activity> getAvailableActivities() {
+        return stage.getActivities().stream()
+                .filter(a -> !activities.contains(a))
+                .toList();
+    }
+
+    public void registerSession(Session session) {
         checkStageOpen();
 
         if (!stage.getSessions().contains(session)) {
@@ -75,13 +86,20 @@ public class Registration implements Serializable {
         this.sessions.sort(Comparator.comparing(Session::getStartDateTime));
     }
 
-    public void removeSession(Session session) {
+    public void unregisterSession(Session session) {
         checkStageOpen();
         this.sessions.remove(session);
     }
 
     public List<Session> getSessions() {
         return sessions;
+    }
+
+    public List<Session> getAvailableSessions() {
+        return stage.getSessions().stream()
+                .filter(s -> !sessions.contains(s))
+                .filter(s -> !s.getInstructor().equals(person))
+                .toList();
     }
 
     public Person getPerson() {
@@ -96,22 +114,53 @@ public class Registration implements Serializable {
         return person.getFullName() + " - " + stage.getName();
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public boolean isPaid() {
-        return paid;
-    }
-
-    public void setPaid(boolean paid) {
-        this.paid = paid;
-    }
-
     private void checkStageOpen() {
         if (!stage.isOpen()) {
             throw new StageStatusException("Le stage n'est pas en mode OPEN mais " + stage.getStatus() + ".");
         }
+    }
+
+    @Override
+    public String toString() {
+        String registration = BOLD + getName() + RESET + "\n"
+                + "  |  Date du stage : " + formatWeekend(stage.getStartDate()) + "\n"
+                + "  |  Date de la réservation : " + format(createdAt) + "\n"
+                + "  |  Sessions : " + sessions.size() + "\n"
+                + "  |  Activités : " + activities.size() + "\n";
+
+        StringBuilder sbSessions = new StringBuilder();
+        if (!sessions.isEmpty()) {
+            sbSessions.append("\n");
+            sbSessions.append(String.format("%-3s %-25s %-25s %-10s %-35s%n", "#", "Session", "Formateur", "Coût", "Horaire"));
+            sbSessions.append("--------------------------------------------------------------------------------------------------------");
+
+            for (int i = 0; i < sessions.size(); i++) {
+                Session session = sessions.get(i);
+                sbSessions.append(String.format("%-3s %-25s %-25s %-10s %-35s%n",
+                        BOLD + (i + 1) + RESET + ". ",
+                        session.getName(),
+                        session.getInstructor().getFullName(),
+                        session.getPrice().forPerson(person, session.getStartDateTime().toLocalDate()) + "€",
+                        DateUtil.formatDateTime(session.getStartDateTime(), session.getDuration())));
+            }
+        }
+
+        StringBuilder sbActivity = new StringBuilder();
+        if (!activities.isEmpty()) {
+            sbActivity.append("\n");
+            sbActivity.append(String.format("%-3s %-25s %-10s%n", "#", "Activité", "Coût"));
+            sbActivity.append("-------------------------------------------------------------------\n");
+
+            for (int i = 0; i < activities.size(); i++) {
+                Activity activity = activities.get(i);
+                sbActivity.append(String.format("%-3s %-25s %-10s%n",
+                        BOLD + (i + 1) + RESET + ". ",
+                        activity.getName(),
+                        activity.getPrice().forPerson(person, stage.getStartDate()) + "€"));
+            }
+        }
+
+        return registration + sbSessions + sbActivity;
     }
 
     @Override

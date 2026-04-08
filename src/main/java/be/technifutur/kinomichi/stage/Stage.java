@@ -194,7 +194,7 @@ public class Stage implements Serializable {
         };
 
         String stage = BOLD + name + RESET
-                + color + " [" + status.toString().toUpperCase() + "]" + RESET
+                + color + " [ " + status.toString().toUpperCase() + " ]" + RESET
                 + " : " + formatWeekend(startDate) + "\n"
                 + "  |  Description : " + shortDescription + "\n"
                 + "  |  Coût maximum : " + cappedPrice + "€\n"
@@ -204,8 +204,8 @@ public class Stage implements Serializable {
         StringBuilder sbSessions = new StringBuilder();
         if (!sessions.isEmpty()) {
             sbSessions.append("\n");
-            sbSessions.append(String.format("%-3s %-25s %-25s %-10s %-10s %-10s %-35s%n", "#", "Activité", "Formateur", "Adulte", "Enfant", "Formateur", "Date"));
-            sbSessions.append("--------------------------------------------------------------------------------------------------------");
+            sbSessions.append(String.format("%-3s %-25s %-25s %-10s %-10s %-10s %-35s%n", "#", "Session", "Formateur", "Adulte", "Enfant", "Formateur", "Horaire"));
+            sbSessions.append("--------------------------------------------------------------------------------------------------------------------------------------------\n");
 
             for (int i = 0; i < sessions.size(); i++) {
                 Session session = sessions.get(i);
@@ -213,9 +213,9 @@ public class Stage implements Serializable {
                         BOLD + (i + 1) + RESET + ". ",
                         session.getName(),
                         session.getInstructor().getFullName(),
-                        session.getPrice().adult(),
-                        session.getPrice().child(),
-                        session.getPrice().instructor(),
+                        session.getPrice().adult() + "€",
+                        session.getPrice().child() + "€",
+                        session.getPrice().instructor() + "€",
                         DateUtil.formatDateTime(session.getStartDateTime(), session.getDuration())));
             }
         }
@@ -223,17 +223,17 @@ public class Stage implements Serializable {
         StringBuilder sbActivity = new StringBuilder();
         if (!activities.isEmpty()) {
             sbActivity.append("\n");
-            sbActivity.append(String.format("%-3s %-25s %-12s %-12s %-12s%n", "#", "Activité", "Adulte", "Enfant", "Formateur"));
+            sbActivity.append(String.format("%-3s %-25s %-10s %-10s %-10s%n", "#", "Activité", "Adulte", "Enfant", "Formateur"));
             sbActivity.append("-------------------------------------------------------------------\n");
 
             for (int i = 0; i < activities.size(); i++) {
                 Activity activity = activities.get(i);
-                sbActivity.append(String.format("%-3s %-25s %-12s %-12s %-12s%n",
+                sbActivity.append(String.format("%-3s %-25s %-10s %-10s %-10s%n",
                         BOLD + (i + 1) + RESET + ". ",
                         activity.getName(),
-                        activity.getPrice().adult(),
-                        activity.getPrice().child(),
-                        activity.getPrice().instructor()));
+                        activity.getPrice().adult() + "€",
+                        activity.getPrice().child() + "€",
+                        activity.getPrice().instructor() + "€"));
             }
         }
 

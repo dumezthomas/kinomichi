@@ -3,6 +3,7 @@ package be.technifutur.kinomichi.menu;
 import be.technifutur.kinomichi.exception.InvalidMenuChoiceException;
 import be.technifutur.kinomichi.exception.KinomichiException;
 import be.technifutur.kinomichi.person.Person;
+import be.technifutur.kinomichi.person.PersonService;
 import be.technifutur.kinomichi.stage.*;
 import be.technifutur.kinomichi.util.DateUtil;
 
@@ -12,21 +13,25 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.InputMismatchException;
+import java.util.List;
 import java.util.Scanner;
 
 import static be.technifutur.kinomichi.util.ConsoleUtil.*;
 
 public class MenuStage extends MenuAbstract {
     private final StageService stageService;
+    private final PersonService personService;
     private final Stage stage;
 
-    public MenuStage(Scanner scanner, StageService stageService, Stage stage) {
+    public MenuStage(Scanner scanner, StageService stageService, PersonService personService, Stage stage) {
         super(scanner,
                 "Menu Stage",
                 stage.getName(),
                 "Retour au menu principal");
         this.stageService = stageService;
+        this.personService = personService;
         this.stage = stage;
     }
 
@@ -200,8 +205,8 @@ public class MenuStage extends MenuAbstract {
             return;
         }
 
-        System.out.printf("%-3s %-25s %-25s %-10s %-10s %-10s %-35s%n", "#", "Activité", "Formateur", "Adulte", "Enfant", "Formateur", "Date");
-        System.out.println("--------------------------------------------------------------------------------------------------------");
+        System.out.printf("%-3s %-25s %-25s %-10s %-10s %-10s %-35s%n", "#", "Session", "Formateur", "Adulte", "Enfant", "Formateur", "Horaire");
+        System.out.println("--------------------------------------------------------------------------------------------------------------------------------------------");
 
         for (int i = 0; i < stage.getSessions().size(); i++) {
             Session session = stage.getSessions().get(i);
@@ -209,9 +214,9 @@ public class MenuStage extends MenuAbstract {
                     BOLD + (i + 1) + RESET + ". ",
                     session.getName(),
                     session.getInstructor().getFullName(),
-                    session.getPrice().adult(),
-                    session.getPrice().child(),
-                    session.getPrice().instructor(),
+                    session.getPrice().adult() + "€",
+                    session.getPrice().child() + "€",
+                    session.getPrice().instructor() + "€",
                     DateUtil.formatDateTime(session.getStartDateTime(), session.getDuration()));
         }
     }
@@ -230,9 +235,27 @@ public class MenuStage extends MenuAbstract {
             System.out.printf("%-3s %-25s %-10s %-10s %-10s%n",
                     BOLD + (i + 1) + RESET + ". ",
                     activity.getName(),
-                    activity.getPrice().adult(),
-                    activity.getPrice().child(),
-                    activity.getPrice().instructor());
+                    activity.getPrice().adult() + "€",
+                    activity.getPrice().child() + "€",
+                    activity.getPrice().instructor() + "€");
+        }
+    }
+
+    private void displayInstructors(List<Person> instructors) {
+        if (instructors.isEmpty()) {
+            printWarning("Aucun formateur disponible.");
+            return;
+        }
+
+        System.out.printf("%-3s %-25s%n", "#", "Nom");
+        System.out.println("-----------------------------------------------------");
+
+        for (int i = 0; i < instructors.size(); i++) {
+            Person instructor = instructors.get(i);
+
+            System.out.printf("%-3s %-25s%n",
+                    BOLD + (i + 1) + RESET + ". ",
+                    instructor.getFullName());
         }
     }
 
@@ -304,6 +327,44 @@ public class MenuStage extends MenuAbstract {
         }
     }
 
+    public Person selectInstructor() {
+        List<Person> instructors = personService.getPeopleSortedAndFiltered(
+                Comparator.comparing(Person::getFullName),
+                Person::isInstructor);
+
+        if (instructors.isEmpty()) {
+            printWarning("Aucun formateur disponible.");
+            return null;
+        }
+
+        displayInstructors(instructors);
+        System.out.printf("%-3s %-25s%n", BOLD + "0" + RESET + ". ", "Retour");
+        System.out.println();
+        System.out.print(CYAN + "Choisissez un formateur (numéro) : " + RESET);
+
+        while (true) {
+            try {
+                int choice = getScanner().nextInt();
+                getScanner().nextLine();
+
+                if (choice < 0 || choice > instructors.size()) {
+                    throw new InvalidMenuChoiceException(String.valueOf(choice));
+                }
+
+                if (choice == 0) {
+                    return null;
+                } else {
+                    return instructors.get(choice - 1);
+                }
+            } catch (InvalidMenuChoiceException e) {
+                printError("Choix invalide !");
+            } catch (InputMismatchException e) {
+                printError("Veuillez entrer un nombre !");
+                getScanner().nextLine();
+            }
+        }
+    }
+
     private void addSession() {
         String name = askSessionName();
         LocalDateTime startDateTime = askStartDateTime();
@@ -313,15 +374,12 @@ public class MenuStage extends MenuAbstract {
         BigDecimal instructor = askPrice("Coût de la session pour un formateur : ");
         Price price = new Price(adult, child, instructor);
 
-        Session session = new Session(name, startDateTime, duration, price, new Person(
-                "Thomas",
-                "Dumez",
-                LocalDate.of(1986, 9, 9),
-                "test@email.com",
-                "123456789",
-                "THE-CLUB",
-                true
-        ));
+        Person instructorPerson = selectInstructor();
+        if (instructorPerson == null) {
+            return;
+        }
+
+        Session session = new Session(name, startDateTime, duration, price, instructorPerson);
 
         System.out.println();
         try {

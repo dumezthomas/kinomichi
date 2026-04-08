@@ -93,7 +93,7 @@ public class MenuPrincipal extends MenuAbstract {
                     printMenuChoice(3, "Créer un stage");
                     Stage stage = addStage();
                     if (stage != null) {
-                        MenuStage menu = new MenuStage(getScanner(), stageService, stage);
+                        MenuStage menu = new MenuStage(getScanner(), stageService, personService, stage);
                         menu.show();
                     }
                 }
@@ -105,7 +105,7 @@ public class MenuPrincipal extends MenuAbstract {
                                 Comparator.comparing(Stage::getStartDate),
                                 null);
                         if (stage != null) {
-                            MenuStage menu = new MenuStage(getScanner(), stageService, stage);
+                            MenuStage menu = new MenuStage(getScanner(), stageService, personService, stage);
                             menu.show();
                         }
                     } else {
@@ -323,20 +323,19 @@ public class MenuPrincipal extends MenuAbstract {
             return;
         }
 
-        System.out.printf("%-3s %-25s %-25s %-12s %-12s %-8s%n",
-                "#", "Participant", "Stage", "Sessions", "Activités", "Payé ?");
-        System.out.println("-----------------------------------------------------------------------------------------------------------");
+        System.out.printf("%-3s %-25s %-25s %-12s %-12s%n",
+                "#", "Participant", "Stage", "Sessions", "Activités");
+        System.out.println("-----------------------------------------------------------------------------------------------------");
 
         for (int i = 0; i < registrations.size(); i++) {
             Registration registration = registrations.get(i);
 
-            System.out.printf("%-3s %-25s %-25s %-12s %-12s %-8s%n",
+            System.out.printf("%-3s %-25s %-25s %-12s %-12s%n",
                     BOLD + (i + 1) + RESET + ". ",
                     registration.getPerson().getFullName(),
                     registration.getStage().getName(),
                     registration.getSessions().size(),
-                    registration.getActivities().size(),
-                    registration.isPaid() ? "V" : "");
+                    registration.getActivities().size());
         }
     }
 
