@@ -40,6 +40,10 @@ public class RegistrationService {
         return registrations.stream().filter(filter).sorted(comparator).toList();
     }
 
+    public List<Registration> getRegistrationsFiltered(Predicate<Registration> filter) {
+        return registrations.stream().filter(filter).toList();
+    }
+
     public boolean isRegistrationsEmpty() {
         return registrations.isEmpty();
     }

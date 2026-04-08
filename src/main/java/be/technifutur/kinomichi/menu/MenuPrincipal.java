@@ -93,7 +93,7 @@ public class MenuPrincipal extends MenuAbstract {
                     printMenuChoice(3, "Créer un stage");
                     Stage stage = addStage();
                     if (stage != null) {
-                        MenuStage menu = new MenuStage(getScanner(), stageService, personService, stage);
+                        MenuStage menu = new MenuStage(getScanner(), stageService, personService, registrationService, stage);
                         menu.show();
                     }
                 }
@@ -105,7 +105,7 @@ public class MenuPrincipal extends MenuAbstract {
                                 Comparator.comparing(Stage::getStartDate),
                                 null);
                         if (stage != null) {
-                            MenuStage menu = new MenuStage(getScanner(), stageService, personService, stage);
+                            MenuStage menu = new MenuStage(getScanner(), stageService, personService, registrationService, stage);
                             menu.show();
                         }
                     } else {
@@ -141,7 +141,7 @@ public class MenuPrincipal extends MenuAbstract {
                     printMenuChoice(7, "Ajouter un participant");
                     Person person = addPerson();
                     if (person != null) {
-                        MenuPerson menu = new MenuPerson(getScanner(), personService, person);
+                        MenuPerson menu = new MenuPerson(getScanner(), stageService, personService, registrationService, person);
                         menu.show();
                     }
                 }
@@ -153,7 +153,7 @@ public class MenuPrincipal extends MenuAbstract {
                                 Comparator.comparing(Person::getFullName),
                                 null);
                         if (person != null) {
-                            MenuPerson menu = new MenuPerson(getScanner(), personService, person);
+                            MenuPerson menu = new MenuPerson(getScanner(), stageService, personService, registrationService, person);
                             menu.show();
                         }
                     } else {

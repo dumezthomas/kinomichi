@@ -2,6 +2,8 @@ package be.technifutur.kinomichi.menu;
 
 import be.technifutur.kinomichi.person.Person;
 import be.technifutur.kinomichi.person.PersonService;
+import be.technifutur.kinomichi.registration.RegistrationService;
+import be.technifutur.kinomichi.stage.StageService;
 
 import java.time.LocalDate;
 import java.util.Scanner;
@@ -9,15 +11,19 @@ import java.util.Scanner;
 import static be.technifutur.kinomichi.util.ConsoleUtil.*;
 
 public class MenuPerson extends MenuAbstract {
+    private final StageService stageService;
     private final PersonService personService;
+    private final RegistrationService registrationService;
     private final Person person;
 
-    public MenuPerson(Scanner scanner, PersonService personService, Person person) {
+    public MenuPerson(Scanner scanner, StageService stageService, PersonService personService, RegistrationService registrationService, Person person) {
         super(scanner,
                 "Menu Participant",
                 person.getFullName(),
                 "Retour au menu principal");
+        this.stageService = stageService;
         this.personService = personService;
+        this.registrationService = registrationService;
         this.person = person;
     }
 
@@ -89,11 +95,25 @@ public class MenuPerson extends MenuAbstract {
             case 6 -> {
                 printMenuChoice(6, "Supprimer '" + person.getFullName() + "'");
                 String instructorString = person.isInstructor() ? "formateur" : "participant";
-                if (personService.remove(person)) {
-                    printSuccess("Le " + instructorString + " '" + person.getFullName() + "' a été supprimé !");
-                    return false;
+
+                int registrations = registrationService.getRegistrationsFiltered(r -> r.getPerson().equals(person)).size();
+                if (registrations == 0) {
+                    boolean isInstructorFree = stageService.getStagesFiltered(s ->
+                            s.getSessions().stream()
+                                    .anyMatch(session -> session.getInstructor().equals(person)
+                                    )).isEmpty();
+                    if (isInstructorFree) {
+                        if (personService.remove(person)) {
+                            printSuccess("Le " + instructorString + " '" + person.getFullName() + "' a été supprimé !");
+                            return false;
+                        } else {
+                            printError("Erreur lors de la suppression du " + instructorString + " '" + person.getFullName() + "' !");
+                        }
+                    } else {
+                        printError("Erreur lors de la suppression : le formateur est engagé dans certaines sessions.");
+                    }
                 } else {
-                    printError("Erreur lors de la suppression du " + instructorString + " '" + person.getFullName() + "' !");
+                    printError("Erreur lors de la suppression du " + instructorString + " : " + registrations + " réservation(s) enregistrée(s).");
                 }
             }
 

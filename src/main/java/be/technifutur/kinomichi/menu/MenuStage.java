@@ -4,6 +4,7 @@ import be.technifutur.kinomichi.exception.InvalidMenuChoiceException;
 import be.technifutur.kinomichi.exception.KinomichiException;
 import be.technifutur.kinomichi.person.Person;
 import be.technifutur.kinomichi.person.PersonService;
+import be.technifutur.kinomichi.registration.RegistrationService;
 import be.technifutur.kinomichi.stage.*;
 import be.technifutur.kinomichi.util.DateUtil;
 
@@ -23,15 +24,17 @@ import static be.technifutur.kinomichi.util.ConsoleUtil.*;
 public class MenuStage extends MenuAbstract {
     private final StageService stageService;
     private final PersonService personService;
+    private final RegistrationService registrationService;
     private final Stage stage;
 
-    public MenuStage(Scanner scanner, StageService stageService, PersonService personService, Stage stage) {
+    public MenuStage(Scanner scanner, StageService stageService, PersonService personService, RegistrationService registrationService, Stage stage) {
         super(scanner,
                 "Menu Stage",
                 stage.getName(),
                 "Retour au menu principal");
         this.stageService = stageService;
         this.personService = personService;
+        this.registrationService = registrationService;
         this.stage = stage;
     }
 
@@ -174,11 +177,16 @@ public class MenuStage extends MenuAbstract {
             case 9 -> {
                 if (!stage.isOpen()) {
                     printMenuChoice(9, "Supprimer '" + stage.getName() + "'");
-                    if (stageService.remove(stage)) {
-                        printSuccess("Le stage '" + stage.getName() + "' a été supprimé !");
-                        return false;
+                    int registrations = registrationService.getRegistrationsFiltered(r -> r.getStage().equals(stage)).size();
+                    if (registrations == 0) {
+                        if (stageService.remove(stage)) {
+                            printSuccess("Le stage '" + stage.getName() + "' a été supprimé !");
+                            return false;
+                        } else {
+                            printError("Erreur lors de la suppression du stage '" + stage.getName() + "' !");
+                        }
                     } else {
-                        printError("Erreur lors de la suppression du stage '" + stage.getName() + "' !");
+                        printError("Erreur lors de la suppression du stage : " + registrations + " réservation(s) enregistrée(s).");
                     }
                 } else {
                     printWarning("Option indisponible: Le stage est en mode OPEN.");
