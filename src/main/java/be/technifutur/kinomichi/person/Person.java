@@ -87,11 +87,11 @@ public class Person implements Serializable {
     @Override
     public String toString() {
         String instructor = isInstructor() ? (YELLOW + " [ Formateur ]" + RESET) : "";
-        return BOLD + getFullName() + RESET + instructor + "\n" +
-                "  |  Age : " + getAge(LocalDate.now()) + " (" + DateUtil.format(dateOfBirth) + ")\n" +
-                "  |  E-mail : " + email + "\n" +
-                "  |  Téléphone : " + phoneNumber + "\n" +
-                "  |  Club : " + club + "\n";
+        return BOLD + getFullName() + RESET + instructor + "\n"
+                + String.format("  |  %-11s : %s (%s)%n", "Age", getAge(LocalDate.now()), DateUtil.format(dateOfBirth))
+                + String.format("  |  %-11s : %s%n", "E-mail", email)
+                + String.format("  |  %-11s : %s%n", "Téléphone", phoneNumber)
+                + String.format("  |  %-11s : %s%n", "Club", club);
     }
 
     @Override

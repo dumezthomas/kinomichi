@@ -102,9 +102,11 @@ public class MenuPerson extends MenuAbstract {
                             s.getSessions().stream()
                                     .anyMatch(session -> session.getInstructor().equals(person)
                                     )).isEmpty();
+
                     if (isInstructorFree) {
                         if (personService.remove(person)) {
                             printSuccess("Le " + instructorString + " '" + person.getFullName() + "' a été supprimé !");
+
                             return false;
                         } else {
                             printError("Erreur lors de la suppression du " + instructorString + " '" + person.getFullName() + "' !");

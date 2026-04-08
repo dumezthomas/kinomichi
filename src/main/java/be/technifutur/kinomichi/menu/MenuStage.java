@@ -131,7 +131,7 @@ public class MenuStage extends MenuAbstract {
             case 6 -> {
                 if (stage.isDraft()) {
                     printMenuChoice(6, "Modifier le coût maximum");
-                    stage.setCappedPrice(askPrice("Coût maximum si le participant fait toutes les sessions (0 pour ignorer) : "));
+                    stage.setCappedPrice(askPrice("Coût maximum (0 pour ignorer) : "));
                     System.out.println();
                     printSuccess("Le coût maximum a été modifié !");
                     stageService.save();

@@ -10,14 +10,14 @@ import be.technifutur.kinomichi.util.DateUtil;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
-import static be.technifutur.kinomichi.util.ConsoleUtil.BOLD;
-import static be.technifutur.kinomichi.util.ConsoleUtil.RESET;
+import static be.technifutur.kinomichi.util.ConsoleUtil.*;
 import static be.technifutur.kinomichi.util.DateUtil.format;
 import static be.technifutur.kinomichi.util.DateUtil.formatWeekend;
 
@@ -120,27 +120,54 @@ public class Registration implements Serializable {
         }
     }
 
+    public BigDecimal getRegistrationCost() {
+        return getFinalSessionsCost().add(getActivitiesCost());
+    }
+
+    private BigDecimal getSessionsCost() {
+        return sessions.stream()
+                .map(s -> s.getPrice().forPerson(person, s.getStartDateTime().toLocalDate()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal getFinalSessionsCost() {
+        return stage.getCappedPrice().compareTo(BigDecimal.ZERO) == 0 ?
+                getSessionsCost() :
+                getSessionsCost().min(stage.getCappedPrice());
+    }
+
+    private BigDecimal getActivitiesCost() {
+        return activities.stream()
+                .map(a -> a.getPrice().forPerson(person, stage.getStartDate()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     @Override
     public String toString() {
+        BigDecimal discount = getSessionsCost().add(getActivitiesCost()).subtract(getRegistrationCost());
+        String discountString = (discount.compareTo(BigDecimal.ZERO) > 0 ? GREEN : GRAY) + discount + "€" + RESET;
+
         String registration = BOLD + getName() + RESET + "\n"
-                + "  |  Date du stage : " + formatWeekend(stage.getStartDate()) + "\n"
-                + "  |  Date de la réservation : " + format(createdAt) + "\n"
-                + "  |  Sessions : " + sessions.size() + "\n"
-                + "  |  Activités : " + activities.size() + "\n";
+                + String.format("  |  %-18s : %s%n", "Date du stage", formatWeekend(stage.getStartDate()))
+                + String.format("  |  %-18s : %s%n", "Date réservation", format(createdAt))
+                + String.format("  |  %-18s : %s (%s€)%n", "Sessions", sessions.size(), getSessionsCost())
+                + String.format("  |  %-18s : %s (%s€)%n", "Activités", activities.size(), getActivitiesCost())
+                + String.format("  |  %-18s : %s%n", "Réduction", discountString)
+                + String.format("  |  %-18s : %s%n", "Coût total", BOLD + getRegistrationCost() + "€" + RESET);
 
         StringBuilder sbSessions = new StringBuilder();
         if (!sessions.isEmpty()) {
             sbSessions.append("\n");
-            sbSessions.append(String.format("%-3s %-25s %-25s %-10s %-35s%n", "#", "Session", "Formateur", "Coût", "Horaire"));
-            sbSessions.append("--------------------------------------------------------------------------------------------------------");
+            sbSessions.append(String.format("%-3s %-25s %-10s %-25s %-35s%n", "#", "Session", "Coût", "Formateur", "Horaire"));
+            sbSessions.append("--------------------------------------------------------------------------------------------------------------------\n");
 
             for (int i = 0; i < sessions.size(); i++) {
                 Session session = sessions.get(i);
-                sbSessions.append(String.format("%-3s %-25s %-25s %-10s %-35s%n",
+                sbSessions.append(String.format("%-3s %-25s %-10s %-25s %-35s%n",
                         BOLD + (i + 1) + RESET + ". ",
                         session.getName(),
-                        session.getInstructor().getFullName(),
                         session.getPrice().forPerson(person, session.getStartDateTime().toLocalDate()) + "€",
+                        session.getInstructor().getFullName(),
                         DateUtil.formatDateTime(session.getStartDateTime(), session.getDuration())));
             }
         }
@@ -149,7 +176,7 @@ public class Registration implements Serializable {
         if (!activities.isEmpty()) {
             sbActivity.append("\n");
             sbActivity.append(String.format("%-3s %-25s %-10s%n", "#", "Activité", "Coût"));
-            sbActivity.append("-------------------------------------------------------------------\n");
+            sbActivity.append("------------------------------------------\n");
 
             for (int i = 0; i < activities.size(); i++) {
                 Activity activity = activities.get(i);

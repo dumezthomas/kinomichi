@@ -196,10 +196,10 @@ public class Stage implements Serializable {
         String stage = BOLD + name + RESET
                 + color + " [ " + status.toString().toUpperCase() + " ]" + RESET
                 + " : " + formatWeekend(startDate) + "\n"
-                + "  |  Description : " + shortDescription + "\n"
-                + "  |  Coût maximum : " + cappedPrice + "€\n"
-                + "  |  Sessions : " + sessions.size() + "\n"
-                + "  |  Activités : " + activities.size() + "\n";
+                + String.format("  |  %-14s : %s%n", "Description", shortDescription)
+                + String.format("  |  %-14s : %s%n", "Coût maximum", cappedPrice + "€")
+                + String.format("  |  %-14s : %s%n", "Sessions", sessions.size())
+                + String.format("  |  %-14s : %s%n", "Activités", activities.size());
 
         StringBuilder sbSessions = new StringBuilder();
         if (!sessions.isEmpty()) {

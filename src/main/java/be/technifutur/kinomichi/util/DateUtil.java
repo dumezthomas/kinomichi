@@ -67,10 +67,9 @@ public final class DateUtil {
         DateTimeFormatter timeFormatter =
                 DateTimeFormatter.ofPattern("HH'h'mm", Locale.FRENCH);
 
-        String durationString = String.format("[%02dh%02d]", duration / 60, duration % 60);
+        String durationString = String.format("[%02dh%02d] ", duration / 60, duration % 60);
 
-        return durationString + " : "
-                + capitalizeDay(start.format(dateFormatter))
+        return durationString + capitalizeDay(start.format(dateFormatter))
                 + ", de "
                 + start.format(timeFormatter)
                 + " à "

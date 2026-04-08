@@ -301,19 +301,24 @@ public class MenuPrincipal extends MenuAbstract {
             return;
         }
 
-        System.out.printf("%-3s %-25s %-20s %-10s %-10s %-10s%n", "#", "Nom", "Date de naissance", "Adulte", "Enfant", "Formateur");
-        System.out.println("-----------------------------------------------------------------------------------------");
+
+        System.out.printf("%-3s %-25s %-20s %-10s%n", "#", "Nom", "Date de naissance", "Type");
+        System.out.println("--------------------------------------------------------------------");
 
         for (int i = 0; i < people.size(); i++) {
-            Person person = people.get(i);
 
-            System.out.printf("%-3s %-25s %-20s %-10s %-10s %-10s%n",
+            Person person = people.get(i);
+            String type = person.isInstructor() ?
+                    "Formateur" :
+                    (person.isChild(LocalDate.now()) ?
+                     "Enfant" :
+                     "Adulte");
+
+            System.out.printf("%-3s %-25s %-20s %-10s%n",
                     BOLD + (i + 1) + RESET + ". ",
                     person.getFullName(),
                     DateUtil.format(person.getDateOfBirth()),
-                    person.isChild(LocalDate.now()) ? "" : "V",
-                    person.isChild(LocalDate.now()) ? "V" : "",
-                    person.isInstructor() ? "V" : "");
+                    type);
         }
     }
 
@@ -323,20 +328,28 @@ public class MenuPrincipal extends MenuAbstract {
             return;
         }
 
-        System.out.printf("%-3s %-25s %-25s %-12s %-12s%n",
-                "#", "Participant", "Stage", "Sessions", "Activités");
-        System.out.println("-----------------------------------------------------------------------------------------------------");
+        System.out.printf("%-3s %-25s %-25s %-12s %-12s %-10s%n",
+                "#", "Participant", "Stage", "Sessions", "Activités", "Montant");
+        System.out.println("----------------------------------------------------------------------------------------------");
 
         for (int i = 0; i < registrations.size(); i++) {
             Registration registration = registrations.get(i);
 
-            System.out.printf("%-3s %-25s %-25s %-12s %-12s%n",
+            System.out.printf("%-3s %-25s %-25s %-12s %-12s %-10s%n",
                     BOLD + (i + 1) + RESET + ". ",
                     registration.getPerson().getFullName(),
                     registration.getStage().getName(),
                     registration.getSessions().size(),
-                    registration.getActivities().size());
+                    registration.getActivities().size(),
+                    registration.getRegistrationCost() + "€");
         }
+
+        BigDecimal amount = registrations.stream()
+                .map(Registration::getRegistrationCost)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        System.out.println();
+        System.out.println("Montant total : " + amount + "€");
     }
 
     public Stage selectStage(Comparator<Stage> comparator, Predicate<Stage> filter) {
@@ -632,7 +645,7 @@ public class MenuPrincipal extends MenuAbstract {
 
     private BigDecimal askCappedPrice() {
         while (true) {
-            System.out.print("Coût maximum si le participant fait toutes les sessions (0 pour ignorer) : ");
+            System.out.print("Coût maximum (0 pour ignorer) : ");
             String input = getScanner().nextLine().trim().replace(",", ".");
 
             try {

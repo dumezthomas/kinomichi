@@ -59,6 +59,7 @@ public class MenuRegistration extends MenuAbstract {
                     if (session != null) {
                         try {
                             registration.registerSession(session);
+                            System.out.println();
                             printSuccess("L'inscription à la session '" + session.getName() + "' a été enregistrée !");
                             registrationService.save();
                         } catch (KinomichiException e) {
@@ -139,6 +140,7 @@ public class MenuRegistration extends MenuAbstract {
                 if (registration.getStage().isOpen()) {
                     printMenuChoice(6, "Supprimer '" + registration.getName() + "'");
                     if (registrationService.remove(registration)) {
+                        System.out.println();
                         printSuccess("La réservation '" + registration.getName() + "' a été supprimée !");
                         return false;
                     } else {
@@ -169,16 +171,16 @@ public class MenuRegistration extends MenuAbstract {
             return;
         }
 
-        System.out.printf("%-3s %-25s %-25s %-10s %-35s%n", "#", "Activité", "Formateur", "Coût", "Date");
-        System.out.println("--------------------------------------------------------------------------------------------------------");
+        System.out.printf("%-3s %-25s %-10s %-25s %-35s%n", "#", "Session", "Coût", "Formateur", "Horaire");
+        System.out.println("--------------------------------------------------------------------------------------------------------------------");
 
         for (int i = 0; i < sessions.size(); i++) {
             Session session = sessions.get(i);
-            System.out.printf("%-3s %-25s %-25s %-10s %-35s%n",
+            System.out.printf("%-3s %-25s %-10s %-25s %-35s%n",
                     BOLD + (i + 1) + RESET + ". ",
                     session.getName(),
-                    session.getInstructor().getFullName(),
                     session.getPrice().forPerson(registration.getPerson(), registration.getStage().getStartDate()) + "€",
+                    session.getInstructor().getFullName(),
                     DateUtil.formatDateTime(session.getStartDateTime(), session.getDuration()));
         }
     }
@@ -190,7 +192,7 @@ public class MenuRegistration extends MenuAbstract {
         }
 
         System.out.printf("%-3s %-25s %-10s%n", "#", "Activité", "Coût");
-        System.out.println("-------------------------------------------------------------------");
+        System.out.println("------------------------------------------");
 
         for (int i = 0; i < activities.size(); i++) {
             Activity activity = activities.get(i);
